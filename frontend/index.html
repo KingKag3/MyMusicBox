@@ -269,34 +269,6 @@ body.rp-open #now-playing-panel {
 .logo-text { color: var(--text1); }
 .logo-text span { color: var(--accent); }
 
-.tg-pill {
-  margin: 0 16px 16px;
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: background var(--transition);
-  flex-shrink: 0;
-}
-.tg-pill:hover { background: var(--bg3); }
-.tg-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text3);
-  flex-shrink: 0;
-  transition: background var(--transition);
-}
-.tg-dot.connected { background: var(--accent); box-shadow: 0 0 6px rgba(29,185,84,0.6); }
-.tg-dot.error { background: var(--danger); }
-.tg-dot.needs_auth { background: var(--warn); }
-.tg-label { color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
 .nav-group { padding: 8px 0; flex-shrink: 0; }
 .nav-label {
   padding: 4px 16px 8px;
@@ -592,124 +564,20 @@ body.rp-open #now-playing-panel {
 .sel-count { font-weight: 600; }
 .sel-divider { width: 1px; height: 20px; background: var(--border); }
 
-/* ── Search page ── */
-.search-config {
-  padding: 0 32px 16px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  background: var(--bg1);
-}
-.source-toggle {
-  display: flex;
-  background: var(--bg3);
-  border-radius: 20px;
-  padding: 3px;
-  gap: 2px;
-}
-.source-btn {
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  background: transparent;
-  color: var(--text2);
-  transition: all var(--transition);
-}
-.source-btn.active { background: var(--bg1); color: var(--text1); }
-
-/* Per-row source dropdown in search results */
-.src-picker {
-  display: flex;
-  gap: 3px;
-  flex-wrap: wrap;
-}
-.src-pick-btn {
-  padding: 3px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  color: var(--text2);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
-  white-space: nowrap;
-}
-.src-pick-btn:hover { background: var(--accent); border-color: var(--accent); color: #000; }
-.src-pick-btn.downloading { background: var(--bg4); color: var(--text3); cursor: default; }
-.src-pick-btn.done { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
-.src-pick-btn.error { background: rgba(229,83,75,0.15); border-color: var(--danger); color: var(--danger); }
-
-.search-results-area { padding: 0 32px 120px; }
-.search-results-head {
-  display: grid;
-  grid-template-columns: 40px 1fr 160px 80px 100px;
-  padding: 8px 12px;
-  font-size: 11px; font-weight: 600; color: var(--text3);
-  letter-spacing: 0.5px; text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 2px;
-}
-.search-result-row {
-  display: grid;
-  grid-template-columns: 40px 1fr 160px 80px 100px;
-  padding: 7px 12px;
-  border-radius: var(--radius);
-  align-items: center;
-  font-size: 13.5px;
-  transition: background var(--transition);
-  position: relative;
-}
-.search-result-row:hover { background: var(--bg3); }
-.search-result-row.sel { background: var(--blue-dim); }
-.sr-cb { display: flex; align-items: center; justify-content: center; }
-.sr-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sr-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sr-artist { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sr-artist-col { color: var(--text2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sr-dur { color: var(--text3); font-size: 13px; }
-
-/* Download status icons */
-.dl-status-icon { font-size: 16px; width: 26px; text-align: center; }
-.dl-status-icon.grabbing { animation: spin 1s linear infinite; }
-.dl-status-icon.downloading { animation: pulse 0.8s ease-in-out infinite alternate; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
-
 /* Spinner */
-.spinner-wrap { text-align: center; padding: 60px 32px; color: var(--text2); }
 .spinner {
   width: 36px; height: 36px; border-radius: 50%;
   border: 3px solid var(--bg4); border-top-color: var(--accent);
   animation: spin 0.7s linear infinite;
   margin: 0 auto 16px;
 }
-.spinner-wrap h3 { font-size: 15px; margin-bottom: 6px; }
-.spinner-wrap p { font-size: 13px; color: var(--text3); }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Empty state */
 .empty { text-align: center; padding: 80px 32px; }
 .empty-icon { font-size: 52px; margin-bottom: 16px; opacity: 0.5; }
 .empty h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 .empty p { color: var(--text2); font-size: 14px; line-height: 1.6; }
-
-/* Error box */
-.err-box {
-  margin: 16px 32px;
-  padding: 14px 18px;
-  background: rgba(229,83,75,0.1);
-  border: 1px solid rgba(229,83,75,0.3);
-  border-radius: var(--radius);
-  color: var(--danger);
-  font-size: 13.5px;
-  line-height: 1.6;
-}
-.err-box strong { display: block; margin-bottom: 4px; }
-.err-hint { color: var(--text2); font-size: 12.5px; margin-top: 6px; }
 
 /* Toast */
 .toast {
@@ -934,31 +802,6 @@ body.rp-open #now-playing-panel {
 /* ── Edit modal cover hover ── */
 #edit-cover-preview:hover #edit-cover-overlay { opacity: 1 !important; }
 
-/* ── Downloads quick panel ── */
-.dl-panel {
-  padding: 0 32px 120px;
-}
-.dl-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  border-bottom: 1px solid var(--border);
-  font-size: 13.5px;
-}
-.dl-info { flex: 1; min-width: 0; }
-.dl-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dl-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
-.dl-prog { height: 3px; background: var(--bg4); border-radius: 2px; margin-top: 5px; }
-.dl-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
-.dl-badge {
-  font-size: 10px; font-weight: 700;
-  padding: 2px 6px; border-radius: 10px;
-  background: var(--accent);
-  color: #000;
-  display: none;
-}
-.dl-badge.show { display: inline-block; }
-
 audio { display: none; }
 </style>
 </head>
@@ -973,16 +816,8 @@ audio { display: none; }
     <div class="logo-text">My<span>Music</span>Box</div>
   </div>
 
-  <div class="tg-pill" id="tg-pill" onclick="openSetup()">
-    <div class="tg-dot" id="tg-dot"></div>
-    <span class="tg-label" id="tg-label">Checking…</span>
-  </div>
-
   <div class="nav-group">
-    <div class="nav-item active" id="nav-search" onclick="showPage('search')">
-      <span class="nav-icon">🔍</span> Search
-    </div>
-    <div class="nav-item" id="nav-library" onclick="showPage('library')">
+    <div class="nav-item active" id="nav-library" onclick="showPage('library')">
       <span class="nav-icon">🎵</span> Library
     </div>
     <div class="nav-item" id="nav-artists" onclick="showPage('artists')">
@@ -990,10 +825,6 @@ audio { display: none; }
     </div>
     <div class="nav-item" id="nav-albums" onclick="showPage('albums')">
       <span class="nav-icon">💿</span> Albums
-    </div>
-    <div class="nav-item" id="nav-downloads" onclick="showPage('downloads')">
-      <span class="nav-icon">⬇️</span> Downloads
-      <span class="dl-badge" id="dl-badge">0</span>
     </div>
     <div class="nav-item" id="nav-local" onclick="showPage('local')">
       <span class="nav-icon">📁</span> Local Music
@@ -1022,43 +853,8 @@ audio { display: none; }
 ═══════════════════════════════════════ -->
 <main id="main">
 
-  <!-- ── Search Page ── -->
-  <div id="page-search" class="page active">
-    <div class="page-head">
-      <div>
-        <h1>Search</h1>
-        <div class="sub">Results gathered automatically — select and download</div>
-      </div>
-    </div>
-
-    <div class="search-config">
-      <input class="search-input" id="search-q" placeholder="Artist, track, album…"
-             onkeydown="if(event.key==='Enter') doSearch()">
-      <button class="btn btn-green" id="search-btn" onclick="doSearch()">Search</button>
-    </div>
-
-    <div id="search-status" style="padding:0 32px 10px; font-size:13px; color:var(--text3); display:none;"></div>
-
-    <!-- selection toolbar -->
-    <div class="selection-bar" id="sr-sel-bar">
-      <span class="sel-count" id="sr-sel-count">0 selected</span>
-      <div class="sel-divider"></div>
-      <button class="btn btn-green btn-sm" onclick="downloadSelected()">⬇ Download Selected</button>
-      <div class="sel-divider"></div>
-      <button class="btn btn-ghost btn-sm" onclick="clearSearchSelection()">✕ Clear</button>
-    </div>
-
-    <div id="search-results-area">
-      <div class="empty">
-        <div class="empty-icon">🔍</div>
-        <h3>Search for music</h3>
-        <p>Type an artist or track name above.<br>All results are gathered automatically across all pages.</p>
-      </div>
-    </div>
-  </div>
-
   <!-- ── Library Page ── -->
-  <div id="page-library" class="page">
+  <div id="page-library" class="page active">
     <div class="page-head">
       <div>
         <h1>Library</h1>
@@ -1105,19 +901,6 @@ audio { display: none; }
       <div><h1>Albums</h1><div class="sub" id="albums-sub"></div></div>
     </div>
     <div class="cards-grid" id="albums-grid"></div>
-  </div>
-
-  <!-- ── Downloads Page ── -->
-  <div id="page-downloads" class="page">
-    <div class="page-head">
-      <div><h1>Downloads</h1><div class="sub">Track download history</div></div>
-      <div class="head-actions">
-        <button class="btn btn-ghost btn-sm" onclick="loadDownloads()">↺ Refresh</button>
-      </div>
-    </div>
-    <div class="dl-panel" id="dl-list">
-      <div class="empty"><div class="empty-icon">⬇️</div><h3>No downloads yet</h3></div>
-    </div>
   </div>
 
   <!-- ── Playlist Page ── -->
@@ -1292,67 +1075,6 @@ audio { display: none; }
 <!-- ═══════════════════════════════════════
      MODALS
 ═══════════════════════════════════════ -->
-
-<!-- Setup modal -->
-<div class="overlay" id="overlay-setup">
-  <div class="modal">
-    <!-- Step 1: credentials -->
-    <div id="setup-step-creds">
-      <h2>⚙️ Telegram Setup</h2>
-      <p class="sub">Get credentials at <strong>my.telegram.org</strong> → API development tools. Phone must include country code e.g. <strong>+1</strong>6467631690</p>
-      <div class="form-row"><label>API ID</label><input class="form-input" id="cfg-apiid" placeholder="12345678"></div>
-      <div class="form-row"><label>API Hash</label><input class="form-input" id="cfg-apihash" placeholder="abc123..."></div>
-      <div class="form-row"><label>Phone number</label><input class="form-input" id="cfg-phone" placeholder="+16467631690"></div>
-      <div class="form-row"><label>Bot channel (default)</label><input class="form-input" id="cfg-channel" placeholder="@DeezerMusicBot"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('overlay-setup')">Cancel</button>
-        <button class="btn btn-green" id="btn-save-creds" onclick="saveCredentials()">Save & Send Code</button>
-      </div>
-    </div>
-
-    <!-- Step 2: verification code -->
-    <div id="setup-step-code" style="display:none">
-      <h2>📱 Enter Code</h2>
-      <p class="sub" id="code-hint">Telegram sent a verification code to your phone or Telegram app. Enter it below.</p>
-      <div class="form-row">
-        <label>Verification Code</label>
-        <input class="form-input" id="cfg-code" placeholder="12345" maxlength="10"
-               style="font-size:24px;letter-spacing:6px;text-align:center"
-               onkeydown="if(event.key==='Enter') submitCode()">
-      </div>
-      <div id="code-error" style="color:var(--danger);font-size:13px;margin-top:-8px;margin-bottom:12px;display:none"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="backToCreds()">← Back</button>
-        <button class="btn btn-green" id="btn-submit-code" onclick="submitCode()">Verify</button>
-      </div>
-    </div>
-
-    <!-- Step 3: 2FA (if needed) -->
-    <div id="setup-step-2fa" style="display:none">
-      <h2>🔐 Two-Factor Auth</h2>
-      <p class="sub">Your account has 2FA enabled. Enter your Telegram password.</p>
-      <div class="form-row">
-        <label>Password</label>
-        <input class="form-input" id="cfg-2fa" type="password" placeholder="Your Telegram password"
-               onkeydown="if(event.key==='Enter') submit2FA()">
-      </div>
-      <div id="twofa-error" style="color:var(--danger);font-size:13px;margin-top:-8px;margin-bottom:12px;display:none"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="backToCreds()">← Back</button>
-        <button class="btn btn-green" onclick="submit2FA()">Confirm</button>
-      </div>
-    </div>
-
-    <!-- Step 4: connected -->
-    <div id="setup-step-done" style="display:none">
-      <h2>✅ Connected!</h2>
-      <p class="sub" id="done-msg">Successfully connected to Telegram.</p>
-      <div class="modal-actions">
-        <button class="btn btn-green" onclick="closeModal('overlay-setup')">Done</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Create playlist modal -->
 <div class="overlay" id="overlay-newpl">
@@ -1586,12 +1308,10 @@ let qIdx = -1;
 let currentTrack = null;
 let shuffleOn = false;
 let repeatMode = 0; // 0=off 1=all 2=one
-let currentPage = 'search';
+let currentPage = 'library';
 let currentPlaylistId = null;
 let selectedLibIds = new Set();    // track db id
 let pendingAddTrackIds = [];
-let dlPollTimer = null;
-// Per-track resolve status: key="channel:num:source" -> 'idle'|'resolving'|'queued'|'downloading'|'done'|'error'
 
 // ═══════════════════════════════════════════════════════════════
 // UTILS
@@ -1641,269 +1361,8 @@ function showPage(name, data = {}) {
   if (name === 'library') loadLibrary();
   else if (name === 'artists') loadArtists();
   else if (name === 'albums') loadAlbums();
-  else if (name === 'downloads') loadDownloads();
   else if (name === 'local') loadFolders();
   else if (name === 'playlist') loadPlaylistPage(data.id);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TELEGRAM STATUS
-// ═══════════════════════════════════════════════════════════════
-function pollTelegramStatus() {
-  // Fire-and-forget — never blocks, never throws, never hangs navigation
-  const dot = document.getElementById('tg-dot');
-  const label = document.getElementById('tg-label');
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000); // 5s hard timeout
-
-  fetch('/api/telegram/status', { signal: controller.signal })
-    .then(r => r.ok ? r.json() : null)
-    .then(d => {
-      clearTimeout(timer);
-      if (!d) { dot.className = 'tg-dot error'; label.textContent = 'Server error'; return; }
-      dot.className = 'tg-dot ' + d.status;
-      label.textContent = d.message;
-      const next = d.status === 'connected' ? 60000 : d.status === 'not_configured' ? 0 : 20000;
-      if (next > 0) setTimeout(pollTelegramStatus, next);
-    })
-    .catch(() => {
-      clearTimeout(timer);
-      dot.className = 'tg-dot error';
-      label.textContent = 'Cannot reach server';
-      setTimeout(pollTelegramStatus, 20000);
-    });
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SEARCH
-// ═══════════════════════════════════════════════════════════════
-// ── Search state ─────────────────────────────────────────────────────────────
-let searchResults = [];
-let selectedSearchMsgIds = new Set(); // msg_id of selected audio messages
-const dlStatusMap = {}; // msg_id -> 'idle'|'queued'|'downloading'|'done'|'error'
-
-function renderSearchResults() {
-  const area = document.getElementById('search-results-area');
-  if (!searchResults.length) {
-    area.innerHTML = `<div class="empty"><div class="empty-icon">🎵</div><h3>No results</h3><p>Try a different search term.</p></div>`;
-    return;
-  }
-
-  const allSel = searchResults.filter(r => r.msg_id).every(r => selectedSearchMsgIds.has(r.msg_id));
-  let html = `<div style="padding:0 32px 120px">
-    <div style="display:grid;grid-template-columns:32px 32px 1fr 160px 70px 90px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);margin-bottom:2px;">
-      <div><input type="checkbox" ${allSel?'checked':''} onchange="toggleAllSearch(this.checked)" style="accent-color:var(--accent);cursor:pointer"></div>
-      <div>#</div><div>Title</div><div>Artist</div><div>Time</div><div>Action</div>
-    </div>`;
-
-  searchResults.forEach((r, i) => {
-    const hasMsgId = !!r.msg_id;
-    const sel = hasMsgId && selectedSearchMsgIds.has(r.msg_id);
-    const st = dlStatusMap[r.msg_id] || 'idle';
-    const actionHtml = r.error
-      ? `<span style="color:var(--danger);font-size:12px">unavailable</span>`
-      : !hasMsgId
-      ? `<span style="color:var(--text3);font-size:12px">—</span>`
-      : st === 'done' ? `<span style="color:var(--accent);font-size:18px">✓</span>`
-      : st === 'downloading' ? `<span class="dl-status-icon downloading">⬇️</span>`
-      : st === 'queued' ? `<span class="dl-status-icon grabbing">⏳</span>`
-      : `<button class="btn btn-outline btn-sm" onclick="downloadOne(${i})">⬇ Get</button>`;
-
-    html += `<div style="display:grid;grid-template-columns:32px 32px 1fr 160px 70px 90px;padding:7px 12px;border-radius:8px;align-items:center;transition:background .12s;${sel?'background:var(--blue-dim)':''}" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='${sel?'var(--blue-dim)':''}'">
-      <div>${hasMsgId ? `<input type="checkbox" ${sel?'checked':''} onchange="toggleSearchSel(${r.msg_id},this.checked)" style="accent-color:var(--accent);cursor:pointer">` : ''}</div>
-      <div style="color:var(--text3);font-size:12px">${r.num}</div>
-      <div style="min-width:0">
-        <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px">${esc(r.title)}</div>
-      </div>
-      <div style="color:var(--text2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.artist)}</div>
-      <div style="color:var(--text3);font-size:13px">${fmt(r.duration)}</div>
-      <div>${actionHtml}</div>
-    </div>`;
-  });
-
-  html += '</div>';
-  area.innerHTML = html;
-  updateSearchSelBar();
-}
-
-function toggleAllSearch(checked) {
-  searchResults.filter(r => r.msg_id).forEach(r => {
-    if (checked) selectedSearchMsgIds.add(r.msg_id);
-    else selectedSearchMsgIds.delete(r.msg_id);
-  });
-  renderSearchResults();
-}
-
-function toggleSearchSel(msgId, checked) {
-  if (checked) selectedSearchMsgIds.add(msgId);
-  else selectedSearchMsgIds.delete(msgId);
-  updateSearchSelBar();
-}
-
-function clearSearchSelection() {
-  selectedSearchMsgIds.clear();
-  renderSearchResults();
-}
-
-function updateSearchSelBar() {
-  const bar = document.getElementById('sr-sel-bar');
-  const cnt = selectedSearchMsgIds.size;
-  bar.classList.toggle('show', cnt > 0);
-  document.getElementById('sr-sel-count').textContent = `${cnt} selected`;
-}
-
-async function downloadOne(idx) {
-  const r = searchResults[idx];
-  if (!r || !r.msg_id) return;
-  dlStatusMap[r.msg_id] = 'queued';
-  renderSearchResults();
-  try {
-    await api('/api/downloads', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channel: r.channel,
-        msg_id: r.msg_id,
-        filename: r.filename || `${r.title}.mp3`,
-        title: r.title,
-        artist: r.artist,
-        source: 'telegram'
-      })
-    });
-    startDlPoll();
-  } catch(e) {
-    dlStatusMap[r.msg_id] = 'error';
-    renderSearchResults();
-    toast('Download failed: ' + e.message, 'err');
-  }
-}
-
-async function downloadSelected() {
-  const toDownload = searchResults.filter(r => r.msg_id && selectedSearchMsgIds.has(r.msg_id));
-  if (!toDownload.length) return;
-  const body = {
-    items: toDownload.map(r => ({
-      channel: r.channel,
-      msg_id: r.msg_id,
-      filename: r.filename || `${r.title}.mp3`,
-      title: r.title,
-      artist: r.artist,
-      source: 'telegram'
-    }))
-  };
-  toDownload.forEach(r => { dlStatusMap[r.msg_id] = 'queued'; });
-  renderSearchResults();
-  try {
-    await api('/api/downloads/multi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    toast(`Queued ${toDownload.length} download${toDownload.length>1?'s':''}`, 'ok');
-    startDlPoll();
-    clearSearchSelection();
-  } catch(e) {
-    toast('Download failed: ' + e.message, 'err');
-  }
-}
-
-async function doSearch() {
-  const q = document.getElementById('search-q').value.trim();
-  if (!q) { toast('Enter a search query', 'err'); return; }
-  const cfg = await api('/api/config').catch(() => null);
-  const channel = cfg?.bot_channel;
-  if (!channel) { toast('Set a bot channel in Setup first', 'err'); openSetup(); return; }
-
-  const btn = document.getElementById('search-btn');
-  btn.disabled = true; btn.textContent = '⏳ Searching…';
-  selectedSearchMsgIds.clear();
-  searchResults = [];
-
-  const status = document.getElementById('search-status');
-  status.style.display = 'block';
-  status.textContent = `Gathering all results for "${q}"…`;
-
-  document.getElementById('search-results-area').innerHTML = `<div class="spinner-wrap">
-    <div class="spinner"></div>
-    <h3>Gathering tracks…</h3>
-    <p>Paginating through all results and collecting audio files</p>
-  </div>`;
-
-  try {
-    const data = await api('/api/telegram/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel, query: q, timeout: 60 })
-    });
-    searchResults = data.results || [];
-    status.textContent = `${data.count} track${data.count!==1?'s':''} found for "${q}"`;
-    renderSearchResults();
-  } catch(e) {
-    status.style.display = 'none';
-    document.getElementById('search-results-area').innerHTML = `<div class="err-box">
-      <strong>Search failed: ${esc(e.message)}</strong>
-      <div class="err-hint">Check Telegram connection and try again.</div>
-    </div>`;
-  } finally {
-    btn.disabled = false; btn.textContent = 'Search';
-  }
-}
-
-
-// ═══════════════════════════════════════════════════════════════
-// DOWNLOADS POLL
-// ═══════════════════════════════════════════════════════════════
-async function loadDownloads() {
-  const data = await api('/api/downloads').catch(() => null);
-  if (!data) return;
-  const active = data.downloads.filter(d => ['queued','downloading'].includes(d.status));
-  const badge = document.getElementById('dl-badge');
-  badge.textContent = active.length;
-  badge.classList.toggle('show', active.length > 0);
-
-  // Sync dlStatus
-  data.downloads.forEach(d => {
-    const key = `${d.tg_channel}:${d.tg_msg_id}`;
-    dlStatus[key] = d.status;
-  });
-
-  if (currentPage === 'downloads') {
-    const el = document.getElementById('dl-list');
-    if (!data.downloads.length) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon">⬇️</div><h3>No downloads yet</h3></div>`;
-      return;
-    }
-    el.innerHTML = data.downloads.map(d => {
-      const icon = d.status==='done' ? '✅' : d.status==='error' ? '❌' : d.status==='downloading' ? '⬇️' : '⏳';
-      const pct = d.live_progress || d.progress || 0;
-      return `<div class="dl-item">
-        <div style="font-size:20px;flex-shrink:0">${icon}</div>
-        <div class="dl-info">
-          <div class="dl-name">${esc(d.title || d.filename)}</div>
-          <div class="dl-sub">${d.status==='error' ? esc(d.error||'Unknown error') : d.status==='done' ? 'Completed' : d.status==='downloading' ? `Downloading… ${pct}%` : 'Queued'}</div>
-          ${d.status==='downloading'?`<div class="dl-prog"><div class="dl-prog-fill" style="width:${pct}%"></div></div>`:''}
-        </div>
-      </div>`;
-    }).join('');
-  }
-}
-
-function startDlPoll() {
-  if (dlPollTimer) return;
-  dlPollTimer = setInterval(async () => {
-    await loadDownloads();
-    const data = await api('/api/downloads').catch(() => null);
-    if (!data) return;
-    const active = data.downloads.filter(d => ['queued','downloading'].includes(d.status));
-    if (!active.length) {
-      clearInterval(dlPollTimer);
-      dlPollTimer = null;
-      loadLibrary();
-      // Refresh search result buttons
-      searchResults.forEach(r => refreshDlBtn(`${r.channel}:${r.msg_id}`));
-    }
-  }, 2000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2404,129 +1863,6 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 document.querySelectorAll('.overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
 });
-
-function setupShowStep(step) {
-  ['creds','code','2fa','done'].forEach(s => {
-    document.getElementById(`setup-step-${s}`).style.display = s === step ? 'block' : 'none';
-  });
-}
-
-function backToCreds() { setupShowStep('creds'); }
-
-async function openSetup() {
-  // Check if already authorized — skip to done if so
-  try {
-    const s = await api('/api/auth/status');
-    if (s.authorized) {
-      document.getElementById('done-msg').textContent = `Already connected as ${s.name}. You can update credentials below.`;
-      // Load existing config into fields
-      const cfg = await api('/api/config').catch(() => ({}));
-      if (cfg.bot_channel) document.getElementById('cfg-channel').value = cfg.bot_channel;
-      setupShowStep('creds');
-    } else {
-      setupShowStep('creds');
-    }
-  } catch(e) {
-    setupShowStep('creds');
-  }
-  document.getElementById('overlay-setup').classList.add('show');
-}
-
-async function saveCredentials() {
-  let phone = document.getElementById('cfg-phone').value.trim();
-  // Auto-add + if missing
-  if (phone && !phone.startsWith('+')) phone = '+' + phone;
-
-  const body = {
-    api_id: document.getElementById('cfg-apiid').value.trim(),
-    api_hash: document.getElementById('cfg-apihash').value.trim(),
-    phone,
-    bot_channel: document.getElementById('cfg-channel').value.trim(),
-  };
-  if (!body.api_id || !body.api_hash || !body.phone) { toast('All fields required', 'err'); return; }
-
-  const btn = document.getElementById('btn-save-creds');
-  btn.disabled = true; btn.textContent = 'Sending code...';
-
-  try {
-    // Save config first
-    await api('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-
-    // Check if already authorized — no need to re-send code
-    const status = await api('/api/auth/status');
-    if (status.authorized) {
-      document.getElementById('done-msg').textContent = `Connected as ${status.name}`;
-      setupShowStep('done');
-      pollTelegramStatus();
-      return;
-    }
-
-    // Send verification code
-    const result = await api('/api/auth/start', { method: 'POST' });
-    document.getElementById('code-hint').textContent = `Code sent to ${phone}. Check your Telegram app or SMS.`;
-    document.getElementById('cfg-code').value = '';
-    document.getElementById('code-error').style.display = 'none';
-    setupShowStep('code');
-    setTimeout(() => document.getElementById('cfg-code').focus(), 100);
-  } catch(e) {
-    toast('Error: ' + e.message, 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Save & Send Code';
-  }
-}
-
-async function submitCode() {
-  const code = document.getElementById('cfg-code').value.trim();
-  if (!code) { toast('Enter the code', 'err'); return; }
-
-  const btn = document.getElementById('btn-submit-code');
-  btn.disabled = true; btn.textContent = 'Verifying...';
-  document.getElementById('code-error').style.display = 'none';
-
-  try {
-    const result = await api('/api/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
-    });
-    if (result.step === 'waiting_2fa') {
-      setupShowStep('2fa');
-      setTimeout(() => document.getElementById('cfg-2fa').focus(), 100);
-    } else {
-      const me = await api('/api/auth/status');
-      document.getElementById('done-msg').textContent = `Connected as ${me.name || 'your account'}!`;
-      setupShowStep('done');
-      pollTelegramStatus();
-      toast('Telegram connected!', 'ok');
-    }
-  } catch(e) {
-    const errEl = document.getElementById('code-error');
-    errEl.textContent = e.message;
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Verify';
-  }
-}
-
-async function submit2FA() {
-  const pw = document.getElementById('cfg-2fa').value;
-  try {
-    await api('/api/auth/2fa', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pw })
-    });
-    const me = await api('/api/auth/status');
-    document.getElementById('done-msg').textContent = `Connected as ${me.name || 'your account'}!`;
-    setupShowStep('done');
-    pollTelegramStatus();
-    toast('Telegram connected!', 'ok');
-  } catch(e) {
-    const errEl = document.getElementById('twofa-error');
-    errEl.textContent = e.message;
-    errEl.style.display = 'block';
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════
 // KEYBOARD
@@ -3469,16 +2805,8 @@ async function applyToAlbum() {
 
 async function init() {
   loadStylePrefs();
-  pollTelegramStatus();
   loadSidebarPlaylists();
-
-  const cfg = await api('/api/config').catch(() => null);
-  if (cfg && !cfg.configured) {
-    setTimeout(() => toast('Welcome! Set up Telegram credentials to get started.'), 800);
-  }
-  if (cfg?.bot_channel) {
-    document.getElementById('cfg-channel').value = cfg.bot_channel;
-  }
+  loadLibrary();
 }
 
 init();
