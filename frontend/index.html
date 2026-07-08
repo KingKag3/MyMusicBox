@@ -1467,7 +1467,7 @@ const ID3 = (() => {
       if (id === 'TIT2') meta.title = readTextFrame(fb);
       else if (id === 'TPE1') meta.artist = readTextFrame(fb);
       else if (id === 'TALB') meta.album = readTextFrame(fb);
-      else if (id === 'TCON') meta.genre = readTextFrame(fb);
+      else if (id === 'TCON') meta.genre = readTextFrame(fb).replace(/^\(\d+\)(?=.)/, '');
       else if (id === 'TYER' || id === 'TDRC') meta.year = readTextFrame(fb).slice(0, 4);
       else if (id === 'APIC') {
         const enc = fb[0];
@@ -1912,7 +1912,7 @@ async function loadLibrary() {
 function renderLibrary() {
   const el = document.getElementById('lib-tracks');
   if (!libTracks.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🎵</div><h3>No tracks yet</h3><p>Search for music and download some tracks.</p></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🎵</div><h3>No tracks yet</h3><p>Head to Local Music to add a folder or drag in some files.</p></div>`;
     return;
   }
   el.innerHTML = libTracks.map((t, i) => trackRow(t, i + 1, libTracks, selectedLibIds)).join('');

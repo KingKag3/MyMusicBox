@@ -1,35 +1,46 @@
 #!/usr/bin/env python3
-"""MyMusicBox v2 -- start script"""
-import subprocess, sys, os
+"""
+MyMusicBox v2 -- start script
+
+MyMusicBox is a fully client-side app now (IndexedDB + File System Access
+API in the browser) -- there's no backend to install or run. This just
+serves frontend/ over HTTP, since browsers only allow File System Access
+API access from a secure context (http://localhost qualifies; a plain
+file:// URL does not).
+"""
+import http.server
+import os
+import socketserver
+import webbrowser
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-BACKEND = os.path.join(ROOT, "backend")
+FRONTEND = os.path.join(ROOT, "frontend")
+PORT = int(os.environ.get("PORT", 8765))
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=FRONTEND, **kwargs)
+
+    def log_message(self, format, *args):
+        pass  # keep the terminal quiet
+
 
 if __name__ == "__main__":
     print("-" * 48)
     print("  MyMusicBox v2")
     print("-" * 48)
-    print("Installing dependencies...")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-r", os.path.join(BACKEND, "requirements.txt"), "-q"],
-        check=True
-    )
-    print("")
-    print("  >> Open http://localhost:8765 in your browser <<")
-    print("")
-    print("  Use the Stop Server button inside the app to quit.")
+    print(f"  >> Open http://localhost:{PORT} in your browser <<")
+    print("  Press Ctrl+C to stop.")
     print("-" * 48)
 
-    os.chdir(BACKEND)
-    sys.path.insert(0, BACKEND)
+    try:
+        webbrowser.open(f"http://localhost:{PORT}")
+    except Exception:
+        pass
 
-    import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8765,
-        reload=True,
-        reload_dirs=[BACKEND],
-        log_level="info",   # show errors in terminal
-        access_log=False,   # hide per-request lines to reduce PS noise
-    )
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nStopped.")

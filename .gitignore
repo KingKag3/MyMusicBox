@@ -1,27 +1,10 @@
-# Python
+# Python (start.py's own bytecode cache, if any)
 __pycache__/
 *.py[cod]
-*.egg-info/
-.venv/
-venv/
 
-# Local runtime data / secrets
-config.json
-tg_session*
+# Leftover from the old server-backed version (safe to delete)
 mymusicbox.db
-
-# Song files / downloaded audio (do not commit music)
-music_library/*
-!music_library/.gitkeep
-covers/*
-!covers/.gitkeep
-*.mp3
-*.flac
-*.wav
-*.m4a
-*.ogg
-*.opus
-*.aac
+config.json
 
 # OS / editor cruft
 .DS_Store
