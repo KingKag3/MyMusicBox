@@ -15,6 +15,15 @@ leave your browser. The same file works two ways:
   and point it at your own files. Nobody else ever sees them; nothing is
   uploaded anywhere.
 
+<p align="center">
+  <img src="screenshots/library.svg" width="70%" alt="Library view mockup">
+</p>
+<p align="center">
+  <img src="screenshots/now-playing.svg" width="28%" alt="Now Playing panel mockup">
+</p>
+
+<sub>Mockups of the actual UI/theme — not live screenshots (see note below).</sub>
+
 ## How it works
 
 Everything lives in `frontend/index.html`:

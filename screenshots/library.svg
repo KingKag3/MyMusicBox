@@ -1,0 +1,157 @@
+<svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <clipPath id="round"><rect x="0" y="0" width="1200" height="720" rx="12"/></clipPath>
+  </defs>
+  <g clip-path="url(#round)">
+    <!-- base -->
+    <rect width="1200" height="720" fill="#0a0a0c"/>
+
+    <!-- sidebar -->
+    <rect x="0" y="0" width="240" height="720" fill="#0a0a0c"/>
+    <rect x="240" y="0" width="1" height="720" fill="#ffffff12"/>
+
+    <circle cx="34" cy="38" r="17" fill="#1db954"/>
+    <text x="34" y="44" font-size="16" text-anchor="middle" fill="#0a0a0c">♪</text>
+    <text x="60" y="45" font-size="20" font-weight="800" fill="#ffffff">My<tspan fill="#1db954">Music</tspan>Box</text>
+
+    <g font-size="13" font-weight="600">
+      <rect x="16" y="88" width="208" height="34" rx="8" fill="#1db95422"/>
+      <rect x="16" y="88" width="3" height="34" fill="#1db954"/>
+      <text x="34" y="109" fill="#1db954">🎵  Library</text>
+      <text x="34" y="149" fill="#b3b3b3">🎤  Artists</text>
+      <text x="34" y="189" fill="#b3b3b3">💿  Albums</text>
+      <text x="34" y="229" fill="#b3b3b3">📁  Local Music</text>
+    </g>
+
+    <line x1="16" y1="258" x2="224" y2="258" stroke="#ffffff12"/>
+    <text x="16" y="280" font-size="11" font-weight="700" letter-spacing="1" fill="#535353">PLAYLISTS</text>
+    <text x="34" y="308" font-size="12" fill="#b3b3b3" opacity="0.7">＋ New playlist</text>
+    <g font-size="12.5" fill="#e6e6e6">
+      <text x="34" y="342">♪ Road Trip</text>
+      <text x="34" y="370">♪ Late Night</text>
+      <text x="34" y="398">♪ Workout</text>
+    </g>
+
+    <rect x="12" y="668" width="216" height="32" rx="8" fill="#222228"/>
+    <text x="120" y="689" font-size="12" font-weight="600" text-anchor="middle" fill="#b3b3b3">🎨 Appearance</text>
+
+    <!-- main -->
+    <text x="272" y="70" font-size="28" font-weight="800" fill="#ffffff">Library</text>
+    <text x="272" y="94" font-size="13" fill="#b3b3b3">6 tracks</text>
+    <rect x="1080" y="52" width="88" height="30" rx="15" fill="#222228"/>
+    <text x="1124" y="72" font-size="12" font-weight="600" text-anchor="middle" fill="#b3b3b3">↺ Refresh</text>
+
+    <rect x="272" y="110" width="820" height="36" rx="18" fill="#18181c" stroke="#ffffff12"/>
+    <text x="292" y="133" font-size="13" fill="#535353">Filter library…</text>
+
+    <g font-size="11" font-weight="700" letter-spacing="0.5" fill="#535353">
+      <text x="316" y="176">#</text>
+      <text x="360" y="176">TITLE</text>
+      <text x="620" y="176">ARTIST</text>
+      <text x="800" y="176">ALBUM</text>
+      <text x="960" y="176">TIME</text>
+      <text x="1020" y="176">ACTIONS</text>
+    </g>
+    <line x1="272" y1="186" x2="1168" y2="186" stroke="#ffffff12"/>
+
+    <!-- track rows -->
+    <g font-size="13.5">
+      <!-- row 1 (playing) -->
+      <rect x="272" y="196" width="896" height="52" rx="8" fill="#ffffff08"/>
+      <rect x="316" y="214" width="16" height="16" fill="none" stroke="#535353" rx="3"/>
+      <g fill="#1db954"><rect x="352" y="214" width="3" height="8"/><rect x="358" y="210" width="3" height="16"/><rect x="364" y="216" width="3" height="6"/></g>
+      <rect x="384" y="206" width="36" height="36" rx="6" fill="#3a2f10"/>
+      <text x="402" y="228" font-size="14" text-anchor="middle" fill="#e0b84a">🎵</text>
+      <text x="432" y="220" fill="#1db954" font-weight="600">All The Stars</text>
+      <text x="432" y="236" font-size="11.5" fill="#727272">Kendrick Lamar</text>
+      <text x="620" y="228" fill="#b3b3b3">Kendrick Lamar</text>
+      <text x="800" y="228" fill="#b3b3b3">All The Stars</text>
+      <text x="960" y="228" fill="#727272">3:56</text>
+      <text x="1020" y="228" fill="#535353" font-size="14">✏️ 🎵 ＋ 🗑</text>
+
+      <!-- row 2 -->
+      <rect x="316" y="266" width="16" height="16" fill="none" stroke="#535353" rx="3"/>
+      <text x="316" y="286" fill="#535353" font-size="12">2</text>
+      <rect x="384" y="258" width="36" height="36" rx="6" fill="#3a1a24"/>
+      <text x="402" y="280" font-size="14" text-anchor="middle" fill="#e05a7a">💿</text>
+      <text x="432" y="272" fill="#ffffff" font-weight="500">Alive</text>
+      <text x="432" y="288" font-size="11.5" fill="#727272">Pearl Jam</text>
+      <text x="620" y="280" fill="#b3b3b3">Pearl Jam</text>
+      <text x="800" y="280" fill="#b3b3b3">Ten</text>
+      <text x="960" y="280" fill="#727272">5:41</text>
+      <text x="1020" y="280" fill="#535353" font-size="14">✏️ 🎵 ＋ 🗑</text>
+
+      <!-- row 3 -->
+      <rect x="316" y="318" width="16" height="16" fill="none" stroke="#535353" rx="3"/>
+      <text x="316" y="338" fill="#535353" font-size="12">3</text>
+      <rect x="384" y="310" width="36" height="36" rx="6" fill="#2a2333"/>
+      <text x="402" y="332" font-size="14" text-anchor="middle" fill="#8b7fd6">🎤</text>
+      <text x="432" y="324" fill="#ffffff" font-weight="500">My Immortal</text>
+      <text x="432" y="340" font-size="11.5" fill="#727272">Evanescence</text>
+      <text x="620" y="332" fill="#b3b3b3">Evanescence</text>
+      <text x="800" y="332" fill="#b3b3b3">Fallen</text>
+      <text x="960" y="332" fill="#727272">4:33</text>
+      <text x="1020" y="332" fill="#535353" font-size="14">✏️ 🎵 ＋ 🗑</text>
+
+      <!-- row 4 -->
+      <rect x="316" y="370" width="16" height="16" fill="none" stroke="#535353" rx="3"/>
+      <text x="316" y="390" fill="#535353" font-size="12">4</text>
+      <rect x="384" y="362" width="36" height="36" rx="6" fill="#123024"/>
+      <text x="402" y="384" font-size="14" text-anchor="middle" fill="#4ad991">🎸</text>
+      <text x="432" y="376" fill="#ffffff" font-weight="500">One Last Breath</text>
+      <text x="432" y="392" font-size="11.5" fill="#727272">Creed</text>
+      <text x="620" y="384" fill="#b3b3b3">Creed</text>
+      <text x="800" y="384" fill="#b3b3b3">Weathered</text>
+      <text x="960" y="384" fill="#727272">4:15</text>
+      <text x="1020" y="384" fill="#535353" font-size="14">✏️ 🎵 ＋ 🗑</text>
+
+      <!-- row 5 -->
+      <rect x="316" y="422" width="16" height="16" fill="none" stroke="#535353" rx="3"/>
+      <text x="316" y="442" fill="#535353" font-size="12">5</text>
+      <rect x="384" y="414" width="36" height="36" rx="6" fill="#331e2e"/>
+      <text x="402" y="436" font-size="14" text-anchor="middle" fill="#e08fcf">🎀</text>
+      <text x="432" y="428" fill="#ffffff" font-weight="500">Everyday</text>
+      <text x="432" y="444" font-size="11.5" fill="#727272">Ariana Grande</text>
+      <text x="620" y="436" fill="#b3b3b3">Ariana Grande</text>
+      <text x="800" y="436" fill="#b3b3b3">Dangerous Woman</text>
+      <text x="960" y="436" fill="#727272">3:16</text>
+      <text x="1020" y="436" fill="#535353" font-size="14">✏️ 🎵 ＋ 🗑</text>
+
+      <!-- row 6 -->
+      <rect x="316" y="474" width="16" height="16" fill="none" stroke="#535353" rx="3"/>
+      <text x="316" y="494" fill="#535353" font-size="12">6</text>
+      <rect x="384" y="466" width="36" height="36" rx="6" fill="#331e2e"/>
+      <text x="402" y="488" font-size="14" text-anchor="middle" fill="#e08fcf">🎀</text>
+      <text x="432" y="480" fill="#ffffff" font-weight="500">Be Alright</text>
+      <text x="432" y="496" font-size="11.5" fill="#727272">Ariana Grande</text>
+      <text x="620" y="488" fill="#b3b3b3">Ariana Grande</text>
+      <text x="800" y="488" fill="#b3b3b3">Dangerous Woman</text>
+      <text x="960" y="488" fill="#727272">3:22</text>
+      <text x="1020" y="488" fill="#535353" font-size="14">✏️ 🎵 ＋ 🗑</text>
+    </g>
+
+    <!-- now playing bar -->
+    <rect x="0" y="630" width="1200" height="90" fill="#111114"/>
+    <rect x="0" y="630" width="1200" height="1" fill="#ffffff12"/>
+    <rect x="20" y="647" width="56" height="56" rx="6" fill="#3a2f10"/>
+    <text x="48" y="682" font-size="20" text-anchor="middle" fill="#e0b84a">🎵</text>
+    <text x="90" y="670" font-size="13" font-weight="700" fill="#ffffff">All The Stars</text>
+    <text x="90" y="688" font-size="12" fill="#b3b3b3">Kendrick Lamar · All The Stars</text>
+
+    <g font-size="18" fill="#e6e6e6" text-anchor="middle">
+      <text x="540" y="662">⇄</text>
+      <text x="580" y="662">⏮</text>
+      <circle cx="620" cy="657" r="18" fill="#ffffff"/>
+      <text x="620" y="663" fill="#0a0a0c" font-size="14">⏸</text>
+      <text x="660" y="662">⏭</text>
+      <text x="700" y="662">↻</text>
+    </g>
+    <text x="470" y="700" font-size="11" fill="#727272">1:38</text>
+    <rect x="500" y="694" width="220" height="3" rx="1.5" fill="#3a3a3a"/>
+    <rect x="500" y="694" width="90" height="3" rx="1.5" fill="#1db954"/>
+    <text x="730" y="700" font-size="11" fill="#727272">3:55</text>
+
+    <rect x="1080" y="646" width="100" height="28" rx="14" fill="#1db95422" stroke="#1db954"/>
+    <text x="1130" y="664" font-size="11" font-weight="700" text-anchor="middle" fill="#1db954">Now Playing</text>
+  </g>
+</svg>
