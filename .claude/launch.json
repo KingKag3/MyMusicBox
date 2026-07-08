@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mymusicbox",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["start.py"],
+      "port": 8765
+    }
+  ]
+}
