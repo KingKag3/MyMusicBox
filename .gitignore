@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local runtime data / secrets
+config.json
+tg_session*
+mymusicbox.db
+
+# Song files / downloaded audio (do not commit music)
+music_library/*
+!music_library/.gitkeep
+covers/*
+!covers/.gitkeep
+*.mp3
+*.flac
+*.wav
+*.m4a
+*.ogg
+*.opus
+*.aac
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
