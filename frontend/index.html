@@ -842,9 +842,6 @@ audio { display: none; }
     <button onclick="document.getElementById('overlay-style').classList.add('show');initStylePanel()" style="width:100%;padding:7px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text1)'" onmouseout="this.style.color='var(--text2)'">
       🎨 Appearance
     </button>
-    <button onclick="stopServer()" style="width:100%;padding:7px;background:rgba(229,83,75,0.1);border:1px solid rgba(229,83,75,0.2);border-radius:8px;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(229,83,75,0.2)'" onmouseout="this.style.background='rgba(229,83,75,0.1)'">
-      ⏹ Stop Server
-    </button>
   </div>
 </nav>
 
@@ -1905,7 +1902,7 @@ let libTracks = [];
 
 async function loadLibrary() {
   const q = document.getElementById('lib-search')?.value || '';
-  const data = await api(`/api/tracks?search=${encodeURIComponent(q)}&limit=500`).catch(() => null);
+  const data = await Lib.listTracks({ search: q, limit: 500 }).catch(() => null);
   if (!data) return;
   libTracks = data.tracks;
   document.getElementById('lib-sub').textContent = `${data.total} tracks`;
@@ -1931,13 +1928,13 @@ function trackRow(t, num, allTracks, selSet) {
   const idx = allTracks.indexOf(t);
   const playing = currentTrack?.id === t.id;
   const sel = selSet?.has(t.id);
-  const thumb = `<img src="/api/cover/${t.id}" onerror="this.outerHTML='♪'" loading="lazy">`;
+  const thumb = coverImgHtml(t);
   const numCell = playing
     ? `<div class="playing-anim"></div><span class="row-play-pause">⏸</span>`
     : `<span class="row-num-label">${num}</span><span class="row-play-label">▶</span>`;
   return `<div class="track-row ${playing?'playing':''} ${sel?'selected':''}" data-track-id="${t.id}" onclick="_playFromList(${idx})">
     <div class="track-cb" onclick="event.stopPropagation()">
-      <input type="checkbox" ${sel?'checked':''} onchange="toggleLibSel(${t.id},this.checked)" style="accent-color:var(--accent);cursor:pointer">
+      <input type="checkbox" ${sel?'checked':''} onchange="toggleLibSel('${t.id}',this.checked)" style="accent-color:var(--accent);cursor:pointer">
     </div>
     <div class="track-num">${numCell}</div>
     <div class="track-info">
@@ -1951,10 +1948,10 @@ function trackRow(t, num, allTracks, selSet) {
     <div class="track-album">${esc(t.album)}</div>
     <div class="track-dur">${fmt(t.duration)}</div>
     <div class="track-actions">
-      <button class="icon-btn" onclick="event.stopPropagation();openEditTrack(${t.id})" title="Edit metadata">✏️</button>
-      <button class="icon-btn" onclick="event.stopPropagation();openItunesForTrack(${t.id})" title="Search iTunes">🎵</button>
-      <button class="icon-btn" onclick="event.stopPropagation();promptAddToPlaylist(${t.id})" title="Add to playlist">＋</button>
-      <button class="icon-btn" onclick="event.stopPropagation();deleteTrack(${t.id})" title="Remove">🗑</button>
+      <button class="icon-btn" onclick="event.stopPropagation();openEditTrack('${t.id}')" title="Edit metadata">✏️</button>
+      <button class="icon-btn" onclick="event.stopPropagation();openItunesForTrack('${t.id}')" title="Search iTunes">🎵</button>
+      <button class="icon-btn" onclick="event.stopPropagation();promptAddToPlaylist('${t.id}')" title="Add to playlist">＋</button>
+      <button class="icon-btn" onclick="event.stopPropagation();deleteTrack('${t.id}')" title="Remove">🗑</button>
     </div>
   </div>`;
 }
@@ -1987,7 +1984,7 @@ function clearLibSelection() {
 
 async function deleteTrack(id) {
   if (!confirm('Remove this track from your library?')) return;
-  await api(`/api/tracks/${id}`, { method: 'DELETE' }).catch(() => null);
+  await Lib.deleteTrack(id).catch(() => null);
   libTracks = libTracks.filter(t => t.id !== id);
   renderLibrary();
   toast('Track removed');
@@ -1997,14 +1994,14 @@ async function deleteTrack(id) {
 // ARTISTS
 // ═══════════════════════════════════════════════════════════════
 async function loadArtists() {
-  const data = await api('/api/artists').catch(() => null);
+  const data = await Lib.listArtists().catch(() => null);
   if (!data) return;
-  document.getElementById('artists-sub').textContent = `${data.artists.length} artists`;
+  document.getElementById('artists-sub').textContent = `${data.length} artists`;
   const grid = document.getElementById('artists-grid');
-  grid.innerHTML = data.artists.map(a => `
+  grid.innerHTML = data.map(a => `
     <div class="card" onclick="filterByArtist('${esc(a.artist)}')">
       <div class="card-img">
-        <img src="/api/artist-image/${encodeURIComponent(a.artist)}" onerror="this.remove()" loading="lazy">
+        ${a.coverUrl ? `<img src="${a.coverUrl}" loading="lazy">` : ''}
         <span style="position:relative;z-index:1">🎤</span>
         <div class="card-play" onclick="event.stopPropagation();playArtist('${esc(a.artist)}')">▶</div>
       </div>
@@ -2014,14 +2011,14 @@ async function loadArtists() {
 }
 
 async function playArtist(artist) {
-  const data = await api(`/api/tracks?artist=${encodeURIComponent(artist)}&limit=200`).catch(() => null);
+  const data = await Lib.listTracks({ artist, limit: 200 }).catch(() => null);
   if (data?.tracks?.length) { playTrackFrom(data.tracks, 0); toast(`Playing ${artist}`, 'ok'); }
 }
 
 function filterByArtist(artist) {
   showPage('library');
   document.getElementById('lib-search').value = '';
-  api(`/api/tracks?artist=${encodeURIComponent(artist)}&limit=200`).then(d => {
+  Lib.listTracks({ artist, limit: 200 }).then(d => {
     libTracks = d.tracks;
     document.getElementById('lib-sub').textContent = artist;
     renderLibrary();
@@ -2032,14 +2029,14 @@ function filterByArtist(artist) {
 // ALBUMS
 // ═══════════════════════════════════════════════════════════════
 async function loadAlbums() {
-  const data = await api('/api/albums').catch(() => null);
+  const data = await Lib.listAlbums().catch(() => null);
   if (!data) return;
-  document.getElementById('albums-sub').textContent = `${data.albums.length} albums`;
+  document.getElementById('albums-sub').textContent = `${data.length} albums`;
   const grid = document.getElementById('albums-grid');
-  grid.innerHTML = data.albums.map(a => `
+  grid.innerHTML = data.map(a => `
     <div class="card" onclick="filterByAlbum('${esc(a.album)}','${esc(a.artist)}')">
       <div class="card-img">
-        <img src="/api/albums-cover/${encodeURIComponent(a.artist)}/${encodeURIComponent(a.album)}" onerror="this.remove()" loading="lazy">
+        ${a.coverUrl ? `<img src="${a.coverUrl}" loading="lazy">` : ''}
         <span style="position:relative;z-index:1">💿</span>
         <div class="card-play" onclick="event.stopPropagation();playAlbum('${esc(a.album)}','${esc(a.artist)}')">▶</div>
       </div>
@@ -2049,13 +2046,13 @@ async function loadAlbums() {
 }
 
 async function playAlbum(album, artist) {
-  const data = await api(`/api/tracks?album=${encodeURIComponent(album)}&artist=${encodeURIComponent(artist)}&limit=200`).catch(() => null);
+  const data = await Lib.listTracks({ album, artist, limit: 200 }).catch(() => null);
   if (data?.tracks?.length) { playTrackFrom(data.tracks, 0); toast(`Playing ${album}`, 'ok'); }
 }
 
 function filterByAlbum(album, artist) {
   showPage('library');
-  api(`/api/tracks?album=${encodeURIComponent(album)}&artist=${encodeURIComponent(artist)}&limit=200`).then(d => {
+  Lib.listTracks({ album, artist, limit: 200 }).then(d => {
     libTracks = d.tracks;
     document.getElementById('lib-sub').textContent = `${album} · ${artist}`;
     renderLibrary();
@@ -2066,11 +2063,11 @@ function filterByAlbum(album, artist) {
 // PLAYLISTS
 // ═══════════════════════════════════════════════════════════════
 async function loadSidebarPlaylists() {
-  const data = await api('/api/playlists').catch(() => null);
+  const data = await Lib.listPlaylists().catch(() => null);
   if (!data) return;
   const el = document.getElementById('sidebar-playlists');
-  el.innerHTML = data.playlists.map(p => `
-    <div class="pl-item ${currentPlaylistId===p.id?'active':''}" onclick="openPlaylist(${p.id},'${esc(p.name)}')">
+  el.innerHTML = data.map(p => `
+    <div class="pl-item ${currentPlaylistId===p.id?'active':''}" onclick="openPlaylist('${p.id}','${esc(p.name)}')">
       <div class="pl-icon">♪</div>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
       <span style="font-size:11px;color:var(--text3)">${p.track_count}</span>
@@ -2085,7 +2082,7 @@ function openPlaylist(id, name) {
 
 async function loadPlaylistPage(id) {
   if (!id) return;
-  const data = await api(`/api/playlists/${id}`).catch(() => null);
+  const data = await Lib.getPlaylist(id).catch(() => null);
   if (!data) return;
   document.getElementById('pl-page-name').textContent = data.name;
   document.getElementById('pl-page-sub').textContent = `${data.tracks.length} tracks${data.description ? ' · ' + data.description : ''}`;
@@ -2095,12 +2092,13 @@ async function loadPlaylistPage(id) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Empty playlist</h3><p>Add tracks from your library.</p></div>`;
     return;
   }
+  _trackRowList = data.tracks;
   el.innerHTML = data.tracks.map((t, i) => `
-    <div class="track-row ${currentTrack?.id===t.id?'playing':''}" onclick="playTrackFrom(${JSON.stringify(data.tracks).replace(/</g,'\\u003c')},${i})">
+    <div class="track-row ${currentTrack?.id===t.id?'playing':''}" data-track-id="${t.id}" onclick="_playFromList(${i})">
       <div class="track-cb"></div>
       <div class="track-num">${currentTrack?.id===t.id?'▶':i+1}</div>
       <div class="track-info">
-        <div class="track-thumb"><img src="/api/cover/${t.id}" onerror="this.outerHTML='♪'" loading="lazy"></div>
+        <div class="track-thumb">${coverImgHtml(t)}</div>
         <div class="track-meta">
           <div class="track-title">${esc(t.title)}</div>
           <div class="track-sub">${esc(t.artist)}</div>
@@ -2110,18 +2108,13 @@ async function loadPlaylistPage(id) {
       <div class="track-album">${esc(t.album)}</div>
       <div class="track-dur">${fmt(t.duration)}</div>
       <div class="track-actions">
-        <button class="icon-btn" onclick="event.stopPropagation();removeFromPlaylist(${id},${t.id})" title="Remove">✕</button>
+        <button class="icon-btn" onclick="event.stopPropagation();removeFromPlaylist('${id}','${t.id}')" title="Remove">✕</button>
       </div>
     </div>`).join('');
 }
 
 function playPlaylist() {
-  const tracks = [];
-  document.querySelectorAll('#pl-tracks .track-row').forEach((row, i) => {
-    const t = { id: parseInt(row.dataset?.tid || 0) };
-  });
-  // Re-fetch and play
-  api(`/api/playlists/${currentPlaylistId}`).then(d => {
+  Lib.getPlaylist(currentPlaylistId).then(d => {
     if (d.tracks.length) playTrackFrom(d.tracks, 0);
   });
 }
@@ -2135,10 +2128,7 @@ function openCreatePlaylist() {
 async function createPlaylist() {
   const name = document.getElementById('newpl-name').value.trim();
   if (!name) return;
-  const data = await api('/api/playlists', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description: document.getElementById('newpl-desc').value })
-  }).catch(() => null);
+  const data = await Lib.createPlaylist(name, document.getElementById('newpl-desc').value).catch(() => null);
   if (data) {
     closeModal('overlay-newpl');
     document.getElementById('newpl-name').value = '';
@@ -2157,9 +2147,9 @@ function promptAddToPlaylist(trackId) {
   if (!pendingAddTrackIds.length) { toast('Select tracks first', 'err'); return; }
   const overlay = document.getElementById('overlay-addpl');
   overlay.classList.add('show');
-  api('/api/playlists').then(data => {
-    document.getElementById('pl-pick-list').innerHTML = data.playlists.map(p => `
-      <div class="pl-pick-item" onclick="addTracksToPlaylist(${p.id}, pendingAddTrackIds)">
+  Lib.listPlaylists().then(data => {
+    document.getElementById('pl-pick-list').innerHTML = data.map(p => `
+      <div class="pl-pick-item" onclick="addTracksToPlaylist('${p.id}', pendingAddTrackIds)">
         <div class="pl-icon">♪</div>
         ${esc(p.name)}
         <span style="margin-left:auto;color:var(--text3);font-size:12px">${p.track_count}</span>
@@ -2170,15 +2160,9 @@ function promptAddToPlaylist(trackId) {
 async function addTracksToPlaylist(playlistId, trackIds) {
   closeModal('overlay-addpl');
   if (trackIds.length === 1) {
-    await api(`/api/playlists/${playlistId}/tracks`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ track_id: trackIds[0] })
-    }).catch(() => null);
+    await Lib.addTrackToPlaylist(playlistId, trackIds[0]).catch(() => null);
   } else {
-    await api(`/api/playlists/${playlistId}/tracks/multi`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ track_ids: [...trackIds] })
-    }).catch(() => null);
+    await Lib.addTracksToPlaylist(playlistId, [...trackIds]).catch(() => null);
   }
   toast(`Added ${trackIds.length} track${trackIds.length>1?'s':''} to playlist`, 'ok');
   pendingAddTrackIds = [];
@@ -2186,14 +2170,14 @@ async function addTracksToPlaylist(playlistId, trackIds) {
 }
 
 async function removeFromPlaylist(plId, trackId) {
-  await api(`/api/playlists/${plId}/tracks/${trackId}`, { method: 'DELETE' }).catch(() => null);
+  await Lib.removeFromPlaylist(plId, trackId).catch(() => null);
   loadPlaylistPage(plId);
   loadSidebarPlaylists();
 }
 
 async function deletePlaylist(id) {
   if (!confirm('Delete this playlist?')) return;
-  await api(`/api/playlists/${id}`, { method: 'DELETE' }).catch(() => null);
+  await Lib.deletePlaylist(id).catch(() => null);
   currentPlaylistId = null;
   loadSidebarPlaylists();
   showPage('library');
@@ -2207,9 +2191,9 @@ function addSelectedToGroup() {
   if (!selectedLibIds.size) { toast('Select tracks first', 'err'); return; }
   const overlay = document.getElementById('overlay-addgrp');
   overlay.classList.add('show');
-  api('/api/groups').then(data => {
-    document.getElementById('grp-pick-list').innerHTML = data.groups.map(g => `
-      <div class="pl-pick-item" onclick="addToGroupAction(${g.id})">
+  Lib.listGroups().then(data => {
+    document.getElementById('grp-pick-list').innerHTML = data.map(g => `
+      <div class="pl-pick-item" onclick="addToGroupAction('${g.id}')">
         <div class="pl-icon">🗂</div>
         ${esc(g.name)}
         <span style="margin-left:auto;color:var(--text3);font-size:12px">${g.track_count}</span>
@@ -2220,10 +2204,7 @@ function addSelectedToGroup() {
 async function addToGroupAction(gid) {
   closeModal('overlay-addgrp');
   for (const tid of selectedLibIds) {
-    await api(`/api/groups/${gid}/tracks`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ track_id: tid })
-    }).catch(() => null);
+    await Lib.addToGroup(gid, tid).catch(() => null);
   }
   toast(`Added ${selectedLibIds.size} tracks to group`, 'ok');
   clearLibSelection();
@@ -2233,16 +2214,10 @@ async function createGroupPrompt() {
   closeModal('overlay-addgrp');
   const name = prompt('Group name:');
   if (!name) return;
-  const data = await api('/api/groups', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name })
-  }).catch(() => null);
+  const data = await Lib.createGroup(name).catch(() => null);
   if (data) {
     for (const tid of selectedLibIds) {
-      await api(`/api/groups/${data.id}/tracks`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ track_id: tid })
-      }).catch(() => null);
+      await Lib.addToGroup(data.id, tid).catch(() => null);
     }
     toast(`Group "${name}" created with ${selectedLibIds.size} tracks`, 'ok');
     clearLibSelection();
@@ -2263,21 +2238,24 @@ function playTrackFrom(tracks, idx) {
   loadAndPlay();
 }
 
-function loadAndPlay() {
+async function loadAndPlay() {
   if (qIdx < 0 || qIdx >= queue.length) return;
   const t = queue[qIdx];
   currentTrack = t;
-  aud.src = `/api/stream/${t.id}`;
-  aud.play().catch(() => {});
   document.getElementById('now-title').textContent = t.title;
   document.getElementById('now-artist').textContent = t.artist + (t.album && t.album !== 'Unknown Album' ? ` · ${t.album}` : '');
   document.title = `${t.title} — MyMusicBox`;
 
   const art = document.getElementById('now-art');
-  art.innerHTML = `<img src="/api/cover/${t.id}" onerror="this.parentElement.innerHTML='♪'" loading="lazy">`;
+  art.innerHTML = t.coverUrl ? `<img src="${t.coverUrl}" loading="lazy">` : '♪';
   refreshPlayingRow(t.id);
   updateNpPanel();
   renderQueue();
+
+  const url = await Lib.getStreamUrl(t.id).catch(() => null);
+  if (!url || currentTrack !== t) return; // track changed while resolving
+  aud.src = url;
+  aud.play().catch(() => {});
 }
 
 function refreshPlayingRow(trackId) {
@@ -2410,70 +2388,44 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-async function stopServer() {
-  if (!confirm('Stop the MyMusicBox server?')) return;
-  try {
-    await fetch('/api/shutdown', { method: 'POST' });
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0a0c;color:#b3b3b3;font-family:system-ui">
-        <div style="font-size:48px">⏹</div>
-        <div style="font-size:18px;font-weight:700;color:#fff">Server stopped</div>
-        <div style="font-size:14px">Close this tab or run <code style="background:#222;padding:2px 8px;border-radius:4px">python start.py</code> to restart</div>
-      </div>`;
-  } catch(e) {
-    toast('Could not stop server: ' + e.message, 'err');
-  }
-}
-
 // ── Local Music ──────────────────────────────────────────────────────────────
 async function loadFolders() {
-  const data = await api('/api/local/folders').catch(() => null);
+  const data = await Lib.listFolders().catch(() => null);
   if (!data) return;
   const el = document.getElementById('folders-list');
-  if (!data.folders.length) {
+  if (!data.length) {
     el.innerHTML = '<div style="color:var(--text3);font-size:13px">No folders added yet. Click + Add Folder to get started.</div>';
     return;
   }
-  el.innerHTML = data.folders.map(f => `
+  el.innerHTML = data.map(f => `
     <div class="folder-item">
       <span style="font-size:20px">📁</span>
       <div style="flex:1;min-width:0">
-        <div class="folder-path">${esc(f.path)}</div>
-        <div class="folder-meta">${f.track_count || 0} tracks · ${f.last_scan ? 'Last scanned ' + new Date(f.last_scan).toLocaleDateString() : 'Never scanned'}</div>
+        <div class="folder-path">${esc(f.name)}</div>
+        <div class="folder-meta">${f.trackCount || 0} tracks · ${f.lastScan ? 'Last scanned ' + new Date(f.lastScan).toLocaleDateString() : 'Never scanned'}</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="scanFolder(${f.id})">↺ Scan</button>
-      <button class="btn btn-danger btn-sm" onclick="removeFolder(${f.id})">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="scanFolder('${f.id}')">↺ Scan</button>
+      <button class="btn btn-danger btn-sm" onclick="removeFolder('${f.id}')">✕</button>
     </div>`).join('');
 }
 
 async function promptAddFolder() {
-  const path = prompt('Enter the full folder path:\n(e.g. E:\\Music or C:\\Users\\you\\Music)');
-  if (!path) return;
   try {
-    await api('/api/local/folders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path })
-    });
-    toast('Folder added', 'ok');
+    const folder = await Lib.addFolder();
+    toast(`Folder "${folder.name}" added`, 'ok');
     loadFolders();
-    // Auto-scan immediately
-    const data = await api('/api/local/folders').catch(() => null);
-    if (data?.folders?.length) {
-      const newest = data.folders[0];
-      scanFolder(newest.id);
-    }
+    scanFolder(folder.id);
   } catch(e) {
-    toast('Error: ' + e.message, 'err');
+    if (e.name !== 'AbortError') toast('Error: ' + e.message, 'err');
   }
 }
 
 async function scanFolder(id) {
   toast('Scanning folder…');
   try {
-    await api(`/api/local/scan/${id}`, { method: 'POST' });
-    toast('Scan started — library will update shortly', 'ok');
-    setTimeout(() => { loadFolders(); loadLibrary(); }, 3000);
+    const r = await Lib.scanFolder(id);
+    toast(`Scan complete — ${r.added} added, ${r.skipped} already in library`, 'ok');
+    loadFolders(); loadLibrary();
   } catch(e) {
     toast('Scan failed: ' + e.message, 'err');
   }
@@ -2482,9 +2434,9 @@ async function scanFolder(id) {
 async function scanAllFolders() {
   toast('Scanning all folders…');
   try {
-    await api('/api/local/scan-all', { method: 'POST' });
-    toast('Scanning all folders — library will update shortly', 'ok');
-    setTimeout(() => { loadFolders(); loadLibrary(); }, 4000);
+    const added = await Lib.scanAllFolders();
+    toast(`Scan complete — ${added} tracks added`, 'ok');
+    loadFolders(); loadLibrary();
   } catch(e) {
     toast('Error: ' + e.message, 'err');
   }
@@ -2492,7 +2444,7 @@ async function scanAllFolders() {
 
 async function removeFolder(id) {
   if (!confirm('Remove this folder from watched list? (Files are not deleted)')) return;
-  await api(`/api/local/folders/${id}`, { method: 'DELETE' }).catch(() => null);
+  await Lib.removeFolder(id).catch(() => null);
   loadFolders();
 }
 
@@ -2506,19 +2458,12 @@ async function uploadFiles(files) {
 
   status.style.display = 'block';
   dropZone.style.opacity = '0.5';
+  status.textContent = `Adding ${audioFiles.length} file${audioFiles.length>1?'s':''}…`;
   let added = 0;
-
-  for (const file of audioFiles) {
-    status.textContent = `Uploading ${file.name}… (${added}/${audioFiles.length})`;
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const r = await fetch('/api/local/upload-file', { method: 'POST', body: fd });
-      if (r.ok) { added++; }
-      else { const e = await r.json().catch(()=>({detail:'Unknown'})); toast(`Failed: ${file.name} — ${e.detail}`, 'err'); }
-    } catch(e) {
-      toast(`Failed: ${file.name}`, 'err');
-    }
+  try {
+    added = await Lib.uploadFiles(audioFiles);
+  } catch(e) {
+    toast('Upload failed: ' + e.message, 'err');
   }
 
   dropZone.style.opacity = '1';
@@ -2698,15 +2643,14 @@ function updateNpPanel() {
   document.getElementById('np-artist').textContent = t.artist || '—';
   document.getElementById('np-album').textContent = t.album && t.album !== 'Unknown Album' ? t.album : '';
   const art = document.getElementById('np-art');
-  art.innerHTML = `<img src="/api/cover/${t.id}" onerror="this.parentElement.innerHTML='♪'" loading="lazy">`;
+  art.innerHTML = t.coverUrl ? `<img src="${t.coverUrl}" loading="lazy">` : '♪';
   // Load YouTube video for this track
   loadYouTubeVideo(t);
 }
 
 function queueItemHtml(t, realIdx, active) {
-  const thumb = `<img src="/api/cover/${t.id}" onerror="this.outerHTML='♪'" loading="lazy">`;
   return `<div class="np-queue-item ${active ? 'active' : ''}" onclick="qIdx=${realIdx};loadAndPlay();renderQueue()">
-    <div class="nq-thumb">${thumb}</div>
+    <div class="nq-thumb">${coverImgHtml(t)}</div>
     <div class="nq-info">
       <div class="nq-title">${esc(t.title)}</div>
       <div class="nq-artist">${esc(t.artist)}</div>
@@ -2725,7 +2669,7 @@ async function renderQueue() {
 
   if (artist && artist !== 'Unknown Artist') {
     // Load other tracks by same artist not currently in queue
-    const data = await api(`/api/tracks?artist=${encodeURIComponent(artist)}&limit=50`).catch(() => null);
+    const data = await Lib.listTracks({ artist, limit: 50 }).catch(() => null);
     if (data?.tracks?.length > 1) {
       const currentIds = new Set(queue.map(t => t.id));
       const more = data.tracks.filter(t => !currentIds.has(t.id)).slice(0, 8);
@@ -2733,18 +2677,19 @@ async function renderQueue() {
         document.getElementById('np-more-label').textContent = `More from ${artist}`;
         // Artist image
         const artistImg = document.getElementById('np-artist-img');
-        artistImg.innerHTML = `<img src="/api/artist-image/${encodeURIComponent(artist)}"
-          onerror="this.parentElement.innerHTML='🎤'"
-          style="width:100%;height:100%;object-fit:cover">`;
+        const artistCover = more.find(t => t.coverUrl)?.coverUrl;
+        artistImg.innerHTML = artistCover
+          ? `<img src="${artistCover}" style="width:100%;height:100%;object-fit:cover">`
+          : '🎤';
 
         document.getElementById('np-artist-tracks').innerHTML = more.map(t => {
-          return `<div class="np-queue-item" onclick="addToQueueAndPlay(${t.id})">
-            <div class="nq-thumb"><img src="/api/cover/${t.id}" onerror="this.outerHTML='♪'" loading="lazy"></div>
+          return `<div class="np-queue-item" onclick="addToQueueAndPlay('${t.id}')">
+            <div class="nq-thumb">${coverImgHtml(t)}</div>
             <div class="nq-info">
               <div class="nq-title">${esc(t.title)}</div>
               <div class="nq-artist">${esc(t.album || t.artist)}</div>
             </div>
-            <button onclick="event.stopPropagation();addToQueue(${t.id})" title="Add to queue"
+            <button onclick="event.stopPropagation();addToQueue('${t.id}')" title="Add to queue"
               style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;
                      padding:2px 4px;border-radius:4px;transition:color var(--transition)"
               onmouseover="this.style.color='var(--accent)'"
@@ -2784,7 +2729,7 @@ function addToQueue(trackId) {
 
 async function addToQueueAndPlay(trackId) {
   const t = libTracks.find(x => x.id === trackId) ||
-    await api(`/api/tracks/${trackId}`).catch(() => null);
+    await Lib.getTrack(trackId).catch(() => null);
   if (!t) return;
   queue.splice(qIdx + 1, 0, t);
   qIdx++;
@@ -2945,6 +2890,30 @@ let _ytCurrentTrackId = null;
 let _ytVideoId = null;
 let _ytEmbedded = false;
 
+function promptYoutubeKey() {
+  const key = prompt('Enter a free YouTube Data API v3 key (from console.cloud.google.com):', localStorage.getItem('yt_api_key') || '');
+  if (key === null) return;
+  localStorage.setItem('yt_api_key', key.trim());
+  if (currentTrack) loadYouTubeVideo(currentTrack);
+}
+
+async function youtubeSearch(artist, title) {
+  const key = localStorage.getItem('yt_api_key');
+  if (!key) return null;
+  const query = encodeURIComponent(`${artist} ${title} official music video`);
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&videoCategoryId=10&maxResults=1&key=${key}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error((await r.json().catch(()=>({})))?.error?.message || r.statusText);
+  const data = await r.json();
+  const item = data.items?.[0];
+  if (!item) return null;
+  const vid = item.id.videoId;
+  return {
+    video_id: vid, title: item.snippet.title, url: `https://www.youtube.com/watch?v=${vid}`,
+    thumbnail: item.snippet.thumbnails.medium.url,
+  };
+}
+
 async function loadYouTubeVideo(track) {
   if (!track) return;
   const section = document.getElementById('np-youtube-section');
@@ -2957,10 +2926,26 @@ async function loadYouTubeVideo(track) {
   _ytEmbedded = false;
 
   section.style.display = 'block';
+
+  if (!localStorage.getItem('yt_api_key')) {
+    area.innerHTML = `<div class="yt-loading" style="flex-direction:column;gap:6px;cursor:pointer" onclick="promptYoutubeKey()">
+      <span style="font-size:20px">🎬</span>
+      <span>Add a YouTube API key to enable video lookup</span>
+    </div>`;
+    return;
+  }
+
   area.innerHTML = `<div class="yt-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Searching YouTube…</div>`;
 
   try {
-    const data = await api(`/api/youtube/search?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`);
+    const data = await youtubeSearch(track.artist, track.title);
+    if (!data) {
+      area.innerHTML = `<div class="yt-loading" style="flex-direction:column;gap:4px">
+        <span style="font-size:20px">🎬</span>
+        <span>No video found</span>
+      </div>`;
+      return;
+    }
     _ytVideoId = data.video_id;
 
     // Update watch link
@@ -2977,14 +2962,7 @@ async function loadYouTubeVideo(track) {
       </div>
       <div class="yt-title">${esc(data.title)}</div>`;
   } catch(e) {
-    if (e.message.includes('404') || e.message.includes('No YouTube')) {
-      area.innerHTML = `<div class="yt-loading" style="flex-direction:column;gap:4px">
-        <span style="font-size:20px">🎬</span>
-        <span>No video found</span>
-      </div>`;
-    } else {
-      area.innerHTML = `<div class="yt-loading" style="color:var(--danger)">⚠ ${esc(e.message)}</div>`;
-    }
+    area.innerHTML = `<div class="yt-loading" style="color:var(--danger)">⚠ ${esc(e.message)}</div>`;
   }
 }
 
@@ -3031,7 +3009,7 @@ function openItunesFromEdit() {
 }
 
 async function openItunesForTrack(trackId) {
-  const t = await api(`/api/tracks/${trackId}`).catch(() => null);
+  const t = await Lib.getTrack(trackId).catch(() => null);
   if (!t) return;
   _itunesTrackId = trackId;
   _itunesSelected = null;
@@ -3043,6 +3021,31 @@ async function openItunesForTrack(trackId) {
   document.getElementById('itunes-save-btn').style.display = 'none';
   document.getElementById('overlay-itunes').classList.add('show');
   searchItunes();
+}
+
+async function itunesSearch(artist, title, limit = 5) {
+  const query = `${artist} ${title}`.trim();
+  if (!query) return [];
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=${limit * 2}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`iTunes API error: ${r.statusText}`);
+  const data = await r.json();
+  return (data.results || []).slice(0, limit).map(item => ({
+    track_id: item.trackId,
+    title: item.trackName || '',
+    artist: item.artistName || '',
+    album: item.collectionName || '',
+    genre: item.primaryGenreName || '',
+    year: item.releaseDate ? item.releaseDate.slice(0, 4) : '',
+    track_num: item.trackNumber,
+    track_count: item.trackCount,
+    duration_ms: item.trackTimeMillis || 0,
+    artwork_url: (item.artworkUrl100 || '').replace('100x100', '600x600'),
+    artwork_100: item.artworkUrl100 || '',
+    preview_url: item.previewUrl || '',
+    itunes_url: item.trackViewUrl || '',
+    explicit: item.trackExplicitness === 'explicit',
+  }));
 }
 
 async function searchItunes() {
@@ -3058,13 +3061,13 @@ async function searchItunes() {
   document.getElementById('itunes-diff-section').style.display = 'none';
 
   try {
-    const data = await api(`/api/itunes/search?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}&limit=6`);
-    if (!data.results.length) {
+    const results = await itunesSearch(artist, title, 6);
+    if (!results.length) {
       list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px">No results found. Try different search terms.</div>';
       return;
     }
     list.innerHTML = '<div class="itunes-results">' +
-      data.results.map((r, i) => `
+      results.map((r, i) => `
         <div class="itunes-result-card" onclick="selectItunesResult(${i})" id="itunes-card-${i}"
           data-result='${JSON.stringify(r).replace(/'/g, "&#39;")}'>
           <img class="itunes-thumb" src="${r.artwork_100}" onerror="this.style.display='none'" alt="">
@@ -3094,7 +3097,7 @@ async function selectItunesResult(idx) {
   _pendingEdits = {};
 
   // Load current track
-  const t = _itunesTrackId ? await api(`/api/tracks/${_itunesTrackId}`).catch(() => null) : null;
+  const t = _itunesTrackId ? await Lib.getTrack(_itunesTrackId).catch(() => null) : null;
 
   // Show diff section
   const diff = document.getElementById('itunes-diff-section');
@@ -3102,8 +3105,7 @@ async function selectItunesResult(idx) {
   document.getElementById('itunes-save-btn').style.display = '';
 
   // Artwork
-  document.getElementById('diff-current-art').src =
-    _itunesTrackId ? `/api/cover/${_itunesTrackId}?t=${Date.now()}` : '';
+  document.getElementById('diff-current-art').src = t?.coverUrl || '';
   document.getElementById('diff-itunes-art').src = _itunesSelected.artwork_url;
 
   // Field diff rows
@@ -3175,15 +3177,16 @@ function copyAllMissing() {
 async function applyItunesArtwork() {
   if (!_itunesSelected?.artwork_url || !_itunesTrackId) return;
   try {
-    await api('/api/itunes/apply-artwork', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ track_id: _itunesTrackId, artwork_url: _itunesSelected.artwork_url })
-    });
+    const r = await fetch(_itunesSelected.artwork_url);
+    if (!r.ok) throw new Error('Failed to download artwork');
+    const blob = await r.blob();
+    await Lib.setCover(_itunesTrackId, blob);
     // Refresh artwork preview in edit modal
+    const t = await Lib.getTrack(_itunesTrackId);
     const preview = document.getElementById('edit-cover-img');
-    if (preview) preview.innerHTML = `<img src="/api/cover/${_itunesTrackId}?t=${Date.now()}"
-      style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.outerHTML='🎵'">`;
+    if (preview) preview.innerHTML = t.coverUrl
+      ? `<img src="${t.coverUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+      : '🎵';
     toast('iTunes artwork applied ✓', 'ok');
     loadLibrary();
   } catch(e) {
@@ -3200,11 +3203,7 @@ async function saveFromItunes() {
   const btn = document.getElementById('itunes-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Saving…';
   try {
-    await api(`/api/tracks/${_itunesTrackId}/metadata`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(_pendingEdits)
-    });
+    await Lib.updateMetadata(_itunesTrackId, _pendingEdits);
     toast(`Saved ${Object.keys(_pendingEdits).length} field(s) to MP3 ✓`, 'ok');
     closeModal('overlay-itunes');
     loadLibrary();
@@ -3230,7 +3229,7 @@ let _editTrackId = null;
 
 async function openEditTrack(trackId) {
   _editTrackId = trackId;
-  const t = await api(`/api/tracks/${trackId}`).catch(() => null);
+  const t = await Lib.getTrack(trackId).catch(() => null);
   if (!t) { toast('Could not load track', 'err'); return; }
 
   document.getElementById('edit-title').value = t.title || '';
@@ -3242,9 +3241,9 @@ async function openEditTrack(trackId) {
 
   // Load cover preview
   const preview = document.getElementById('edit-cover-img');
-  preview.innerHTML = `<img src="/api/cover/${trackId}?t=${Date.now()}"
-    style="width:100%;height:100%;object-fit:cover;border-radius:8px"
-    onerror="this.outerHTML='🎵'">`;
+  preview.innerHTML = t.coverUrl
+    ? `<img src="${t.coverUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+    : '🎵';
 
   // Show "apply to album" only if album is set
   const albumBtn = document.getElementById('edit-album-cover-btn');
@@ -3267,11 +3266,7 @@ async function saveMetadata() {
   };
 
   try {
-    await api(`/api/tracks/${_editTrackId}/metadata`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    await Lib.updateMetadata(_editTrackId, body);
     toast('Saved to MP3 ✓', 'ok');
     closeModal('overlay-edit');
     loadLibrary();
@@ -3295,18 +3290,15 @@ async function uploadCover(input) {
   const status = document.getElementById('edit-cover-status');
   status.textContent = 'Uploading…';
 
-  const fd = new FormData();
-  fd.append('file', file);
-
   try {
-    await fetch(`/api/tracks/${_editTrackId}/cover`, { method: 'POST', body: fd })
-      .then(r => { if (!r.ok) throw new Error('Upload failed'); return r.json(); });
+    await Lib.setCover(_editTrackId, file);
 
     // Refresh preview
+    const t = await Lib.getTrack(_editTrackId);
     const preview = document.getElementById('edit-cover-img');
-    preview.innerHTML = `<img src="/api/cover/${_editTrackId}?t=${Date.now()}"
-      style="width:100%;height:100%;object-fit:cover;border-radius:8px"
-      onerror="this.outerHTML='🎵'">`;
+    preview.innerHTML = t.coverUrl
+      ? `<img src="${t.coverUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+      : '🎵';
 
     document.getElementById('edit-album-cover-btn').style.display = 'block';
     status.textContent = '✓ Cover saved to MP3';
@@ -3327,9 +3319,9 @@ async function applyToAlbum() {
   const btn = document.getElementById('btn-apply-album');
   btn.disabled = true; btn.textContent = '⏳ Applying…';
   try {
-    const data = await api(`/api/tracks/${_editTrackId}/cover/apply-to-album`, { method: 'POST' });
-    toast(`Cover applied to ${data.applied_to} album tracks ✓`, 'ok');
-    btn.textContent = `✓ Applied to ${data.applied_to} tracks`;
+    const applied = await Lib.applyCoverToAlbum(_editTrackId);
+    toast(`Cover applied to ${applied} album tracks ✓`, 'ok');
+    btn.textContent = `✓ Applied to ${applied} tracks`;
   } catch(e) {
     toast('Error: ' + e.message, 'err');
     btn.disabled = false; btn.textContent = '💿 Apply to entire album';
