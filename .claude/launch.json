@@ -5,7 +5,8 @@
       "name": "mymusicbox",
       "runtimeExecutable": "python",
       "runtimeArgs": ["start.py"],
-      "port": 8765
+      "port": 8765,
+      "autoPort": true
     }
   ]
 }

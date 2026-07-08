@@ -11,7 +11,6 @@ file:// URL does not).
 import http.server
 import os
 import socketserver
-import webbrowser
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 FRONTEND = os.path.join(ROOT, "frontend")
@@ -33,11 +32,6 @@ if __name__ == "__main__":
     print(f"  >> Open http://localhost:{PORT} in your browser <<")
     print("  Press Ctrl+C to stop.")
     print("-" * 48)
-
-    try:
-        webbrowser.open(f"http://localhost:{PORT}")
-    except Exception:
-        pass
 
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         try:
