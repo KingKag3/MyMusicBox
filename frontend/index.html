@@ -1335,18 +1335,551 @@ function toast(msg, type = 'info') {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 3500);
 }
-async function api(path, opts = {}) {
-  const r = await fetch(path, opts);
-  if (!r.ok) {
-    const e = await r.json().catch(() => ({ detail: r.statusText }));
-    throw new Error(e.detail || r.statusText);
+function coverImgHtml(track, cls) {
+  if (track && track.coverUrl) return `<img class="${cls||''}" src="${track.coverUrl}" loading="lazy">`;
+  return '♪';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STORAGE — IndexedDB wrapper
+// ═══════════════════════════════════════════════════════════════
+const IDB = (() => {
+  let dbp = null;
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((resolve, reject) => {
+      const req = indexedDB.open('mymusicbox', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('playlists')) db.createObjectStore('playlists', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('groups')) db.createObjectStore('groups', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('folders')) db.createObjectStore('folders', { keyPath: 'id' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbp;
   }
-  return r.json();
+  function toPromise(req) {
+    return new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function getAll(store) {
+    const db = await open();
+    return toPromise(db.transaction(store, 'readonly').objectStore(store).getAll());
+  }
+  async function get(store, key) {
+    const db = await open();
+    return toPromise(db.transaction(store, 'readonly').objectStore(store).get(key));
+  }
+  async function put(store, value) {
+    const db = await open();
+    return toPromise(db.transaction(store, 'readwrite').objectStore(store).put(value));
+  }
+  async function del(store, key) {
+    const db = await open();
+    return toPromise(db.transaction(store, 'readwrite').objectStore(store).delete(key));
+  }
+  return { getAll, get, put, delete: del };
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// FILE ACCESS — File System Access API (Chromium) + Blob fallback
+// ═══════════════════════════════════════════════════════════════
+const FS = (() => {
+  const AUDIO_EXTS = new Set(['mp3', 'ogg', 'flac', 'm4a', 'wav', 'aac', 'opus']);
+
+  function extOf(name) {
+    const i = name.lastIndexOf('.');
+    return i === -1 ? '' : name.slice(i + 1).toLowerCase();
+  }
+
+  async function getFile(track) {
+    if (track.kind === 'blob') return track.blob;
+    return track.handle.getFile();
+  }
+
+  async function ensurePermission(handle, mode = 'read') {
+    const opts = { mode };
+    if ((await handle.queryPermission(opts)) === 'granted') return true;
+    if ((await handle.requestPermission(opts)) === 'granted') return true;
+    return false;
+  }
+
+  async function* walk(dirHandle, prefix = '') {
+    for await (const [name, handle] of dirHandle.entries()) {
+      const relPath = prefix ? `${prefix}/${name}` : name;
+      if (handle.kind === 'directory') {
+        yield* walk(handle, relPath);
+      } else if (AUDIO_EXTS.has(extOf(name))) {
+        yield { handle, relPath, name };
+      }
+    }
+  }
+
+  return { getFile, ensurePermission, walk, extOf, AUDIO_EXTS, hasSupport: !!window.showDirectoryPicker };
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// ID3v2 (MP3) tag reader/writer — hand-rolled, no dependency.
+// Supports title/artist/album/genre/year + APIC cover (read + write).
+// Other formats (FLAC/OGG/M4A/WAV/AAC) get filename-based titles only —
+// same limitation the old Mutagen-based backend had for non-MP3 files.
+// ═══════════════════════════════════════════════════════════════
+const ID3 = (() => {
+  function synchsafeToInt(b0, b1, b2, b3) { return (b0 << 21) | (b1 << 14) | (b2 << 7) | b3; }
+  function intToSynchsafe(n) {
+    return new Uint8Array([(n >>> 21) & 0x7f, (n >>> 14) & 0x7f, (n >>> 7) & 0x7f, n & 0x7f]);
+  }
+  function decodeText(bytes, enc) {
+    try {
+      if (enc === 0) return new TextDecoder('latin1').decode(bytes);
+      if (enc === 1) return new TextDecoder('utf-16').decode(bytes);
+      if (enc === 2) return new TextDecoder('utf-16be').decode(bytes);
+      return new TextDecoder('utf-8').decode(bytes);
+    } catch { return ''; }
+  }
+  const NUL = String.fromCharCode(0);
+  function readTextFrame(bytes) {
+    const s = decodeText(bytes.subarray(1), bytes[0]);
+    let end = s.length;
+    while (end > 0 && s[end - 1] === NUL) end--;
+    return s.slice(0, end);
+  }
+
+  async function read(file) {
+    const meta = { title: '', artist: '', album: '', genre: '', year: '', cover: null, coverMime: null };
+    const headBuf = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+    if (headBuf.length < 10 || headBuf[0] !== 0x49 || headBuf[1] !== 0x44 || headBuf[2] !== 0x33) return meta;
+    const version = headBuf[3];
+    const tagSize = synchsafeToInt(headBuf[6], headBuf[7], headBuf[8], headBuf[9]);
+    const tagBuf = new Uint8Array(await file.slice(10, 10 + tagSize).arrayBuffer());
+    let offset = 0;
+    while (offset + 10 <= tagBuf.length) {
+      const id = String.fromCharCode(...tagBuf.subarray(offset, offset + 4));
+      if (!/^[A-Z0-9]{4}$/.test(id)) break;
+      const size = version >= 4
+        ? synchsafeToInt(tagBuf[offset+4], tagBuf[offset+5], tagBuf[offset+6], tagBuf[offset+7])
+        : (tagBuf[offset+4] << 24) | (tagBuf[offset+5] << 16) | (tagBuf[offset+6] << 8) | tagBuf[offset+7];
+      const frameStart = offset + 10, frameEnd = frameStart + size;
+      if (size <= 0 || frameEnd > tagBuf.length) break;
+      const fb = tagBuf.subarray(frameStart, frameEnd);
+      if (id === 'TIT2') meta.title = readTextFrame(fb);
+      else if (id === 'TPE1') meta.artist = readTextFrame(fb);
+      else if (id === 'TALB') meta.album = readTextFrame(fb);
+      else if (id === 'TCON') meta.genre = readTextFrame(fb);
+      else if (id === 'TYER' || id === 'TDRC') meta.year = readTextFrame(fb).slice(0, 4);
+      else if (id === 'APIC') {
+        const enc = fb[0];
+        let p = 1;
+        const mimeEnd = fb.indexOf(0, p);
+        const mime = new TextDecoder('latin1').decode(fb.subarray(p, mimeEnd));
+        p = mimeEnd + 1;
+        const picType = fb[p]; p += 1;
+        let descEnd = p;
+        if (enc === 1 || enc === 2) {
+          while (descEnd + 1 < fb.length && !(fb[descEnd] === 0 && fb[descEnd+1] === 0)) descEnd += 2;
+          descEnd += 2;
+        } else {
+          while (descEnd < fb.length && fb[descEnd] !== 0) descEnd += 1;
+          descEnd += 1;
+        }
+        meta.cover = fb.slice(descEnd);
+        meta.coverMime = mime || 'image/jpeg';
+      }
+      offset = frameEnd;
+    }
+    return meta;
+  }
+
+  function buildFrame(id, content) {
+    const out = new Uint8Array(10 + content.length);
+    for (let i = 0; i < 4; i++) out[i] = id.charCodeAt(i);
+    out[4] = (content.length >>> 24) & 0xff;
+    out[5] = (content.length >>> 16) & 0xff;
+    out[6] = (content.length >>> 8) & 0xff;
+    out[7] = content.length & 0xff;
+    out.set(content, 10);
+    return out;
+  }
+  function textFrameContent(str) {
+    const utf8 = new TextEncoder().encode(str || '');
+    const out = new Uint8Array(1 + utf8.length);
+    out[0] = 3; // UTF-8
+    out.set(utf8, 1);
+    return out;
+  }
+  function apicFrameContent(mime, picType, data) {
+    const mimeBytes = new TextEncoder().encode(mime || 'image/jpeg');
+    const out = new Uint8Array(1 + mimeBytes.length + 1 + 1 + 1 + data.length);
+    let p = 0;
+    out[p++] = 0; // latin1
+    out.set(mimeBytes, p); p += mimeBytes.length;
+    out[p++] = 0; // mime terminator
+    out[p++] = picType;
+    out[p++] = 0; // empty description + terminator
+    out.set(data, p);
+    return out;
+  }
+
+  async function write(file, updates) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    let oldTagSize = 0;
+    let existing = { title: '', artist: '', album: '', genre: '', year: '', cover: null, coverMime: null };
+    if (buf.length >= 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
+      oldTagSize = 10 + synchsafeToInt(buf[6], buf[7], buf[8], buf[9]);
+      existing = await read(new Blob([buf]));
+    }
+    const merged = {
+      title: updates.title !== undefined ? updates.title : existing.title,
+      artist: updates.artist !== undefined ? updates.artist : existing.artist,
+      album: updates.album !== undefined ? updates.album : existing.album,
+      genre: updates.genre !== undefined ? updates.genre : existing.genre,
+      year: updates.year !== undefined ? updates.year : existing.year,
+      cover: updates.cover !== undefined ? updates.cover : existing.cover,
+      coverMime: updates.cover !== undefined ? updates.coverMime : existing.coverMime,
+    };
+    const frames = [];
+    if (merged.title) frames.push(buildFrame('TIT2', textFrameContent(merged.title)));
+    if (merged.artist) frames.push(buildFrame('TPE1', textFrameContent(merged.artist)));
+    if (merged.album) frames.push(buildFrame('TALB', textFrameContent(merged.album)));
+    if (merged.genre) frames.push(buildFrame('TCON', textFrameContent(merged.genre)));
+    if (merged.year) frames.push(buildFrame('TYER', textFrameContent(merged.year)));
+    if (merged.cover) frames.push(buildFrame('APIC', apicFrameContent(merged.coverMime, 3, merged.cover)));
+
+    const framesLen = frames.reduce((n, f) => n + f.length, 0);
+    const header = new Uint8Array(10);
+    header[0] = 0x49; header[1] = 0x44; header[2] = 0x33; // "ID3"
+    header[3] = 3; header[4] = 0; header[5] = 0; // v2.3.0, no flags
+    header.set(intToSynchsafe(framesLen), 6);
+
+    const audioData = buf.subarray(oldTagSize);
+    const out = new Uint8Array(10 + framesLen + audioData.length);
+    out.set(header, 0);
+    let p = 10;
+    for (const f of frames) { out.set(f, p); p += f.length; }
+    out.set(audioData, p);
+    return new Blob([out], { type: 'audio/mpeg' });
+  }
+
+  return { read, write };
+})();
+
+function probeDuration(blobUrl) {
+  return new Promise((resolve) => {
+    const a = new Audio();
+    const done = (val) => { a.removeAttribute('src'); a.load(); resolve(val); };
+    a.preload = 'metadata';
+    a.onloadedmetadata = () => done(a.duration || 0);
+    a.onerror = () => done(0);
+    a.src = blobUrl;
+  });
 }
-function coverSrc(track) {
-  if (track && track.id) return `/api/cover/${track.id}`;
-  return null;
-}
+
+// ═══════════════════════════════════════════════════════════════
+// LIBRARY DATA LAYER — mirrors the old backend's API shape so the
+// rest of the UI code barely needs to change.
+// ═══════════════════════════════════════════════════════════════
+const Lib = (() => {
+  const coverUrlCache = new Map();
+  const streamUrlCache = new Map();
+
+  function attachCoverUrls(tracks) {
+    for (const t of tracks) {
+      if (t.coverBlob) {
+        if (!coverUrlCache.has(t.id)) coverUrlCache.set(t.id, URL.createObjectURL(t.coverBlob));
+        t.coverUrl = coverUrlCache.get(t.id);
+      } else {
+        t.coverUrl = '';
+      }
+    }
+    return tracks;
+  }
+
+  async function allTracks() {
+    return attachCoverUrls(await IDB.getAll('tracks'));
+  }
+
+  async function listTracks({ search = '', artist = '', album = '', limit = 200, offset = 0 } = {}) {
+    let tracks = await allTracks();
+    if (search) {
+      const q = search.toLowerCase();
+      tracks = tracks.filter(t => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.album.toLowerCase().includes(q));
+    }
+    if (artist) tracks = tracks.filter(t => t.artist === artist);
+    if (album) tracks = tracks.filter(t => t.album === album);
+    tracks.sort((a, b) => (a.artist + a.album + a.title).localeCompare(b.artist + b.album + b.title));
+    return { tracks: tracks.slice(offset, offset + limit), total: tracks.length };
+  }
+
+  async function getTrack(id) {
+    const t = await IDB.get('tracks', id);
+    if (t) attachCoverUrls([t]);
+    return t;
+  }
+
+  async function updateTrack(id, fields) {
+    const t = await IDB.get('tracks', id);
+    if (!t) return;
+    Object.assign(t, fields);
+    await IDB.put('tracks', t);
+  }
+
+  async function deleteTrack(id) {
+    await IDB.delete('tracks', id);
+    for (const store of ['playlists', 'groups']) {
+      const items = await IDB.getAll(store);
+      for (const item of items) {
+        if (item.trackIds && item.trackIds.includes(id)) {
+          item.trackIds = item.trackIds.filter(tid => tid !== id);
+          await IDB.put(store, item);
+        }
+      }
+    }
+  }
+
+  async function listArtists() {
+    const tracks = await allTracks();
+    const map = new Map();
+    for (const t of tracks) {
+      if (!map.has(t.artist)) map.set(t.artist, { artist: t.artist, track_count: 0, albums: new Set(), coverUrl: '' });
+      const a = map.get(t.artist);
+      a.track_count++; a.albums.add(t.album);
+      if (!a.coverUrl && t.coverUrl) a.coverUrl = t.coverUrl;
+    }
+    return Array.from(map.values())
+      .map(a => ({ artist: a.artist, track_count: a.track_count, album_count: a.albums.size, coverUrl: a.coverUrl }))
+      .sort((a, b) => a.artist.localeCompare(b.artist));
+  }
+
+  async function listAlbums() {
+    const tracks = await allTracks();
+    const map = new Map();
+    for (const t of tracks) {
+      const key = t.artist + ' :: ' + t.album;
+      if (!map.has(key)) map.set(key, { album: t.album, artist: t.artist, track_count: 0, coverUrl: '' });
+      const a = map.get(key);
+      a.track_count++;
+      if (!a.coverUrl && t.coverUrl) a.coverUrl = t.coverUrl;
+    }
+    return Array.from(map.values()).sort((a, b) => (a.artist + a.album).localeCompare(b.artist + b.album));
+  }
+
+  function invalidateStreamUrl(id) {
+    if (streamUrlCache.has(id)) { URL.revokeObjectURL(streamUrlCache.get(id)); streamUrlCache.delete(id); }
+  }
+
+  async function getStreamUrl(id) {
+    if (streamUrlCache.has(id)) return streamUrlCache.get(id);
+    const t = await IDB.get('tracks', id);
+    if (!t) return null;
+    const file = await FS.getFile(t);
+    const url = URL.createObjectURL(file);
+    streamUrlCache.set(id, url);
+    return url;
+  }
+
+  // ── Playlists ──
+  async function listPlaylists() {
+    return (await IDB.getAll('playlists'))
+      .map(p => ({ id: p.id, name: p.name, description: p.description || '', track_count: (p.trackIds || []).length, created_at: p.createdAt }))
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  }
+  async function createPlaylist(name, description = '') {
+    const id = crypto.randomUUID();
+    await IDB.put('playlists', { id, name, description, trackIds: [], createdAt: new Date().toISOString() });
+    return { id, name };
+  }
+  async function getPlaylist(id) {
+    const p = await IDB.get('playlists', id);
+    if (!p) return null;
+    const byId = new Map((await allTracks()).map(t => [t.id, t]));
+    return { id: p.id, name: p.name, description: p.description, tracks: (p.trackIds || []).map(tid => byId.get(tid)).filter(Boolean) };
+  }
+  async function addTrackToPlaylist(pid, tid) {
+    const p = await IDB.get('playlists', pid);
+    if (!p) return;
+    p.trackIds = p.trackIds || [];
+    if (!p.trackIds.includes(tid)) p.trackIds.push(tid);
+    await IDB.put('playlists', p);
+  }
+  async function addTracksToPlaylist(pid, tids) {
+    const p = await IDB.get('playlists', pid);
+    if (!p) return;
+    p.trackIds = p.trackIds || [];
+    for (const tid of tids) if (!p.trackIds.includes(tid)) p.trackIds.push(tid);
+    await IDB.put('playlists', p);
+  }
+  async function removeFromPlaylist(pid, tid) {
+    const p = await IDB.get('playlists', pid);
+    if (!p) return;
+    p.trackIds = (p.trackIds || []).filter(id => id !== tid);
+    await IDB.put('playlists', p);
+  }
+  async function deletePlaylist(id) { await IDB.delete('playlists', id); }
+
+  // ── Groups ──
+  async function listGroups() {
+    return (await IDB.getAll('groups'))
+      .map(g => ({ id: g.id, name: g.name, description: g.description || '', track_count: (g.trackIds || []).length }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+  async function createGroup(name, description = '') {
+    const id = crypto.randomUUID();
+    await IDB.put('groups', { id, name, description, trackIds: [], createdAt: new Date().toISOString() });
+    return { id, name };
+  }
+  async function addToGroup(gid, tid) {
+    const g = await IDB.get('groups', gid);
+    if (!g) return;
+    g.trackIds = g.trackIds || [];
+    if (!g.trackIds.includes(tid)) g.trackIds.push(tid);
+    await IDB.put('groups', g);
+  }
+
+  // ── Folders + scanning ──
+  async function buildTrackRecord(file, extra) {
+    const ext = FS.extOf(file.name);
+    let tags = { title: '', artist: '', album: '', genre: '', year: '', cover: null, coverMime: null };
+    if (ext === 'mp3') {
+      try { tags = await ID3.read(file); } catch (e) { console.warn('tag read failed', e); }
+    }
+    const tmpUrl = URL.createObjectURL(file);
+    const duration = await probeDuration(tmpUrl);
+    URL.revokeObjectURL(tmpUrl);
+    return {
+      id: crypto.randomUUID(),
+      title: tags.title || file.name.replace(/\.[^.]+$/, ''),
+      artist: tags.artist || 'Unknown Artist',
+      album: tags.album || 'Unknown Album',
+      genre: tags.genre || '',
+      year: tags.year || '',
+      duration: Math.round(duration || 0),
+      size: file.size,
+      coverBlob: tags.cover ? new Blob([tags.cover], { type: tags.coverMime || 'image/jpeg' }) : null,
+      ext,
+      addedAt: new Date().toISOString(),
+      ...extra,
+    };
+  }
+
+  async function listFolders() {
+    return (await IDB.getAll('folders')).sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+  }
+  async function addFolder() {
+    if (!FS.hasSupport) throw new Error('Folder access needs Chrome or Edge — try dragging files in instead');
+    const handle = await window.showDirectoryPicker();
+    const id = crypto.randomUUID();
+    const folder = { id, name: handle.name, handle, addedAt: new Date().toISOString(), lastScan: null, trackCount: 0 };
+    await IDB.put('folders', folder);
+    return folder;
+  }
+  async function removeFolder(id) { await IDB.delete('folders', id); }
+
+  async function scanFolder(id) {
+    const folder = await IDB.get('folders', id);
+    if (!folder) return { added: 0, skipped: 0 };
+    const ok = await FS.ensurePermission(folder.handle, 'read');
+    if (!ok) throw new Error('Permission to this folder was denied — click the folder again to re-grant access');
+    const existingPaths = new Set((await IDB.getAll('tracks')).filter(t => t.folderId === id).map(t => t.relPath));
+    let added = 0, skipped = 0;
+    for await (const entry of FS.walk(folder.handle)) {
+      if (existingPaths.has(entry.relPath)) { skipped++; continue; }
+      try {
+        const file = await entry.handle.getFile();
+        const track = await buildTrackRecord(file, { kind: 'handle', handle: entry.handle, folderId: id, relPath: entry.relPath });
+        await IDB.put('tracks', track);
+        added++;
+      } catch (e) { console.warn('scan failed for', entry.relPath, e); }
+    }
+    folder.lastScan = new Date().toISOString();
+    folder.trackCount = (folder.trackCount || 0) + added;
+    await IDB.put('folders', folder);
+    return { added, skipped };
+  }
+
+  async function scanAllFolders() {
+    let added = 0;
+    for (const f of await listFolders()) {
+      try { const r = await scanFolder(f.id); added += r.added; } catch (e) { console.warn(e); }
+    }
+    return added;
+  }
+
+  async function uploadFiles(fileList) {
+    let added = 0;
+    for (const file of fileList) {
+      if (!FS.AUDIO_EXTS.has(FS.extOf(file.name))) continue;
+      const track = await buildTrackRecord(file, { kind: 'blob', blob: file });
+      await IDB.put('tracks', track);
+      added++;
+    }
+    return added;
+  }
+
+  // ── Metadata + cover writing (MP3 only — same limitation the old backend had) ──
+  async function writeBackFile(track, blob) {
+    if (track.kind === 'handle') {
+      const ok = await FS.ensurePermission(track.handle, 'readwrite');
+      if (!ok) throw new Error('Write permission denied for this file');
+      const writable = await track.handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } else {
+      track.blob = blob;
+    }
+  }
+
+  async function updateMetadata(id, updates) {
+    const t = await IDB.get('tracks', id);
+    if (!t) throw new Error('Track not found');
+    if (t.ext === 'mp3') {
+      const file = await FS.getFile(t);
+      const newBlob = await ID3.write(file, updates);
+      await writeBackFile(t, newBlob);
+      invalidateStreamUrl(t.id);
+    }
+    Object.assign(t, updates);
+    await IDB.put('tracks', t);
+  }
+
+  async function setCover(id, blob) {
+    const t = await IDB.get('tracks', id);
+    if (!t) throw new Error('Track not found');
+    if (t.ext !== 'mp3') throw new Error('Cover embedding is only supported for MP3 files');
+    const file = await FS.getFile(t);
+    const coverBytes = new Uint8Array(await blob.arrayBuffer());
+    const newBlob = await ID3.write(file, { cover: coverBytes, coverMime: blob.type });
+    await writeBackFile(t, newBlob);
+    t.coverBlob = blob;
+    coverUrlCache.delete(t.id);
+    invalidateStreamUrl(t.id);
+    await IDB.put('tracks', t);
+  }
+
+  async function applyCoverToAlbum(id) {
+    const t = await IDB.get('tracks', id);
+    if (!t || !t.coverBlob) throw new Error('This track has no cover to apply');
+    const mates = (await IDB.getAll('tracks')).filter(m => m.id !== id && m.album === t.album && m.artist === t.artist && m.ext === 'mp3');
+    let applied = 0;
+    for (const m of mates) {
+      try { await setCover(m.id, t.coverBlob); applied++; } catch (e) { console.warn(e); }
+    }
+    return applied;
+  }
+
+  return {
+    attachCoverUrls, allTracks, listTracks, getTrack, updateTrack, deleteTrack,
+    listArtists, listAlbums, getStreamUrl,
+    listPlaylists, createPlaylist, getPlaylist, addTrackToPlaylist, addTracksToPlaylist, removeFromPlaylist, deletePlaylist,
+    listGroups, createGroup, addToGroup,
+    listFolders, addFolder, removeFolder, scanFolder, scanAllFolders, uploadFiles,
+    updateMetadata, setCover, applyCoverToAlbum,
+  };
+})();
 
 // ═══════════════════════════════════════════════════════════════
 // NAVIGATION
