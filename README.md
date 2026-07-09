@@ -77,11 +77,41 @@ same file, works identically. Folder access still requires re-granting
 permission once per browser session (a browser security requirement, not a
 bug) since sites can't silently access your filesystem across visits.
 
+**Docker** — if you'd rather run it as a container (e.g. alongside other
+self-hosted services):
+
+```bash
+docker compose up -d
+```
+
+or without compose:
+
+```bash
+docker build -t mymusicbox .
+docker run -d -p 8765:8765 mymusicbox
+```
+
+Opens the same app at **http://localhost:8765**. The container is just the
+static file server (~49MB, no dependencies beyond Python's stdlib) — it has
+no effect on what music the app can see. Folder access and drag-and-drop
+always happen in *your browser*, on whatever machine it's running on, never
+inside the container; putting music files in a volume mounted into the
+container does nothing, since the app never reads from the server's
+filesystem in the first place.
+
+One real caveat: open it via `http://localhost:8765` and everything works.
+If you expose the container on your network and open it from another
+device via a bare IP (`http://192.168.1.x:8765`), the File System Access
+API (folder watching, write-back tag edits) won't work — browsers only
+allow it over HTTPS or `localhost`. Drag-and-drop/file-picker uploads still
+work fine either way.
+
 ## Project structure
 
 ```
 frontend/index.html          The entire app — UI, storage, tagging, playback
 start.py                     Trivial local static server (no dependencies)
+Dockerfile, docker-compose.yml  Container packaging for start.py
 .github/workflows/pages.yml  Deploys frontend/ to GitHub Pages on push
 ```
 
